@@ -1,65 +1,151 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, Sparkles, Flower } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+export default function LandingAuth() {
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
+  
+  // Form input bindings
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
+    const payload = isLogin ? { email, password } : { name, email, password };
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Something went wrong.");
+      }
+
+      // If login or registration is successful, forward directly onto the Dashboard hub
+      router.push("/dashboard");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-diary-cream selection:bg-diary-blush/30">
+      
+      {/* Aesthetic App Branding Emblem Header */}
+      <header className="mb-8 text-center flex flex-col items-center">
+        <motion.div 
+          animate={{ rotate: [0, 10, -10, 0] }}
+          transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+          className="text-diary-sage mb-2"
+        >
+          <Flower size={32} strokeWidth={1.5} />
+        </motion.div>
+        <h1 className="font-serif text-4xl text-diary-charcoal/90 tracking-wide">Our Quiet Space</h1>
+        <p className="text-xs text-diary-sage/80 mt-1 italic tracking-wider">A private, shared sanctuary for two</p>
+      </header>
+
+      {/* The Central Interactive Linen Paper Card Layout Container */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md bg-diary-paper border border-stone-200/50 rounded-2xl p-8 shadow-sm relative overflow-hidden"
+      >
+        <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-diary-sage/20 via-diary-blush/40 to-diary-sage/20" />
+
+        <h2 className="font-serif text-2xl text-stone-700 text-center mb-6">
+          {isLogin ? "Welcome Back" : "Begin Your Journey"}
+        </h2>
+
+        {error && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs text-red-500/80 bg-red-50 border border-red-100 p-3 rounded-lg mb-4 text-center font-medium">
+            {error}
+          </motion.p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <AnimatePresence mode="popLayout">
+            {!isLogin && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <label className="block text-xs uppercase tracking-widest text-stone-400 font-medium mb-1">Preferred Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-diary-cream/40 border border-stone-200/60 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-diary-sage/60 transition"
+                  placeholder="What should they call you?"
+                  required
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-stone-400 font-medium mb-1">Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-diary-cream/40 border border-stone-200/60 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-diary-sage/60 transition"
+              placeholder="you@example.com"
+              required
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-stone-400 font-medium mb-1">Secret Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-diary-cream/40 border border-stone-200/60 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-diary-sage/60 transition"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-diary-sage hover:bg-diary-sage/90 text-zinc-600 rounded-xl py-3 text-sm font-medium transition duration-200 flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50 mt-6 shadow-sm shadow-diary-sage/10"
           >
-            Documentation
-          </a>
+            <span>{loading ? "Gently stepping in..." : isLogin ? "Enter Sanctuary" : "Create Workspace"}</span>
+          </button>
+        </form>
+
+        <div className="border-t border-stone-100 mt-6 pt-4 text-center">
+          <button
+            type="button"
+            onClick={() => { setIsLogin(!isLogin); setError(""); }}
+            className="text-xs text-stone-400 hover:text-diary-sage transition underline underline-offset-4 cursor-pointer"
+          >
+            {isLogin ? "New here? Create a dual diary setup" : "Already sharing a diary? Step inside"}
+          </button>
         </div>
-      </main>
-    </div>
+      </motion.div>
+    </main>
   );
 }

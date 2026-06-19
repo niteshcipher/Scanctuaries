@@ -1,0 +1,68 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  password     String
+  diaries      Diary[]       @relation("UserDiaries")
+  entries      Entry[]
+  reactions    Reaction[]
+  joinRequests JoinRequest[] // 👈 Tracks requests sent by this user
+  createdAt    DateTime      @default(now())
+}
+
+model Diary {
+  id           String        @id @default(uuid())
+  title        String
+  inviteCode   String        @unique
+  creatorId    String?       // 👈 Tracks who created the diary so only they can manage access
+  nudgeDays    Int           @default(3)
+  users        User[]        @relation("UserDiaries")
+  entries      Entry[]
+  joinRequests JoinRequest[] // 👈 Tracks incoming knocks waiting for approval
+  createdAt    DateTime      @default(now())
+}
+
+model JoinRequest {
+  id        String   @id @default(uuid())
+  diaryId   String
+  diary     Diary    @relation(fields: [diaryId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   // "PENDING", "ACCEPTED", "REJECTED"
+  createdAt DateTime @default(now())
+
+  @@unique([diaryId, userId]) // 👈 Safety Guard: Prevents a user from knocking multiple times on the same diary
+}
+
+model Entry {
+  id          String     @id @default(uuid())
+  diaryId     String
+  diary       Diary      @relation(fields: [diaryId], references: [id], onDelete: Cascade)
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id])
+  title       String
+  content     String     
+  isCapsule   Boolean    @default(false)
+  unlockDate  DateTime?
+  reactions   Reaction[]
+  createdAt   DateTime   @default(now())
+}
+
+model Reaction {
+  id        String   @id @default(uuid())
+  entryId   String
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  emoji     String   
+  createdAt DateTime @default(now())
+}
