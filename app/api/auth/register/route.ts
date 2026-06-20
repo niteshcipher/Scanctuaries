@@ -36,8 +36,15 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ message: "Account created beautifully!", user: newUser }, { status: 201 });
-  } catch (error) {
-    console.error("Signup error:", error);
-    return NextResponse.json({ error: "Something went wrong on our servers." }, { status: 500 });
-  }
+  } catch (error: any) {
+  console.error("FULL SIGNUP ERROR:", error);
+
+  return NextResponse.json(
+    {
+      error: error?.message || String(error),
+      full: JSON.stringify(error, null, 2)
+    },
+    { status: 500 }
+  );
+}
 }

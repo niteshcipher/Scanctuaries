@@ -52,8 +52,15 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (error) {
-    console.error("Login error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+  } catch (error: any) {
+  console.error("FULL SIGNUP ERROR:", error);
+
+  return NextResponse.json(
+    {
+      error: error?.message || String(error),
+      full: JSON.stringify(error, null, 2)
+    },
+    { status: 500 }
+  );
+}
 }
