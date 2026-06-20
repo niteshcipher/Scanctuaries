@@ -7,14 +7,19 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
+// ✅ FIX 1: Prioritize the Transaction Pooler (DATABASE_URL) for serverless queries!
+const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
 
 if (!connectionString) {
-  throw new Error("Neither DIRECT_URL nor DATABASE_URL is set for Prisma runtime.");
+  throw new Error("Neither DATABASE_URL nor DIRECT_URL is set for the Prisma runtime environment.");
 }
 
+// ✅ FIX 2: Instantiate pool configuration explicitly for pg serverless nodes
 const pool = new Pool({
-  connectionString,
+  connectionString: connectionString,
+  max: 1, // Keeps connection footprints small per serverless lambda thread instance
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 const adapter = new PrismaPg(pool);
