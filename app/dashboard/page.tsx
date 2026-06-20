@@ -244,7 +244,7 @@ export default function Dashboard() {
                 {sentRequests.map((req) => (
                   <div key={req.id} className="text-xs flex justify-between items-center bg-diary-cream/50 p-2.5 rounded-lg border border-stone-200/30">
                     <div>
-                      <p className="font-medium text-stone-800 truncate max-w-[120px]">{req.diary.title}</p>
+                      <p className="font-medium text-stone-800 truncate max-w-30">{req.diary.title}</p>
                       <p className="text-[10px] text-stone-400">Code: {req.diary.inviteCode}</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wide ${
