@@ -1,17 +1,11 @@
+// prisma.config.ts
 import "dotenv/config";
-import { defineConfig } from "prisma/config";
-
-const prismaUrl = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
-
-if (!prismaUrl) {
-  throw new Error(
-    "Set either DIRECT_URL or DATABASE_URL in your .env file before running Prisma commands."
-  );
-}
+import { defineConfig, env } from "prisma/config"; // 👈 FIXED: Correct Prisma 7 configuration import target
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: prismaUrl,
+    // ✅ FIXED: Explicitly prioritize the serverless connection pooler (Port 6543)
+    url: env("DATABASE_URL"),
   },
 });
