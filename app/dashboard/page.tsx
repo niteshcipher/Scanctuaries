@@ -192,9 +192,9 @@ export default function Dashboard() {
     setError(""); setSuccessMsg("");
     try {
       const res = await fetch("/api/diaries", {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: inviteCode }),
+        body: JSON.stringify({ code: inviteCode.trim().toUpperCase(), action: "JOIN"}),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not complete request");
