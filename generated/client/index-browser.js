@@ -151,6 +151,7 @@ exports.Prisma.EntryScalarFieldEnum = {
   authorId: 'authorId',
   title: 'title',
   content: 'content',
+  imageUrl: 'imageUrl',
   isCapsule: 'isCapsule',
   unlockDate: 'unlockDate',
   createdAt: 'createdAt'

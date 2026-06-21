@@ -50,7 +50,8 @@ model Entry {
   authorId    String
   author      User       @relation(fields: [authorId], references: [id])
   title       String
-  content     String     
+  content     String    
+  imageUrl    String?
   isCapsule   Boolean    @default(false)
   unlockDate  DateTime?
   reactions   Reaction[]

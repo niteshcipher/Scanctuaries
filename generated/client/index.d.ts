@@ -4791,6 +4791,7 @@ export namespace Prisma {
     authorId: string | null
     title: string | null
     content: string | null
+    imageUrl: string | null
     isCapsule: boolean | null
     unlockDate: Date | null
     createdAt: Date | null
@@ -4802,6 +4803,7 @@ export namespace Prisma {
     authorId: string | null
     title: string | null
     content: string | null
+    imageUrl: string | null
     isCapsule: boolean | null
     unlockDate: Date | null
     createdAt: Date | null
@@ -4813,6 +4815,7 @@ export namespace Prisma {
     authorId: number
     title: number
     content: number
+    imageUrl: number
     isCapsule: number
     unlockDate: number
     createdAt: number
@@ -4826,6 +4829,7 @@ export namespace Prisma {
     authorId?: true
     title?: true
     content?: true
+    imageUrl?: true
     isCapsule?: true
     unlockDate?: true
     createdAt?: true
@@ -4837,6 +4841,7 @@ export namespace Prisma {
     authorId?: true
     title?: true
     content?: true
+    imageUrl?: true
     isCapsule?: true
     unlockDate?: true
     createdAt?: true
@@ -4848,6 +4853,7 @@ export namespace Prisma {
     authorId?: true
     title?: true
     content?: true
+    imageUrl?: true
     isCapsule?: true
     unlockDate?: true
     createdAt?: true
@@ -4932,6 +4938,7 @@ export namespace Prisma {
     authorId: string
     title: string
     content: string
+    imageUrl: string | null
     isCapsule: boolean
     unlockDate: Date | null
     createdAt: Date
@@ -4960,6 +4967,7 @@ export namespace Prisma {
     authorId?: boolean
     title?: boolean
     content?: boolean
+    imageUrl?: boolean
     isCapsule?: boolean
     unlockDate?: boolean
     createdAt?: boolean
@@ -4975,6 +4983,7 @@ export namespace Prisma {
     authorId?: boolean
     title?: boolean
     content?: boolean
+    imageUrl?: boolean
     isCapsule?: boolean
     unlockDate?: boolean
     createdAt?: boolean
@@ -4988,6 +4997,7 @@ export namespace Prisma {
     authorId?: boolean
     title?: boolean
     content?: boolean
+    imageUrl?: boolean
     isCapsule?: boolean
     unlockDate?: boolean
     createdAt?: boolean
@@ -5001,12 +5011,13 @@ export namespace Prisma {
     authorId?: boolean
     title?: boolean
     content?: boolean
+    imageUrl?: boolean
     isCapsule?: boolean
     unlockDate?: boolean
     createdAt?: boolean
   }
 
-  export type EntryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "diaryId" | "authorId" | "title" | "content" | "isCapsule" | "unlockDate" | "createdAt", ExtArgs["result"]["entry"]>
+  export type EntryOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "diaryId" | "authorId" | "title" | "content" | "imageUrl" | "isCapsule" | "unlockDate" | "createdAt", ExtArgs["result"]["entry"]>
   export type EntryInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     diary?: boolean | DiaryDefaultArgs<ExtArgs>
     author?: boolean | UserDefaultArgs<ExtArgs>
@@ -5035,6 +5046,7 @@ export namespace Prisma {
       authorId: string
       title: string
       content: string
+      imageUrl: string | null
       isCapsule: boolean
       unlockDate: Date | null
       createdAt: Date
@@ -5469,6 +5481,7 @@ export namespace Prisma {
     readonly authorId: FieldRef<"Entry", 'String'>
     readonly title: FieldRef<"Entry", 'String'>
     readonly content: FieldRef<"Entry", 'String'>
+    readonly imageUrl: FieldRef<"Entry", 'String'>
     readonly isCapsule: FieldRef<"Entry", 'Boolean'>
     readonly unlockDate: FieldRef<"Entry", 'DateTime'>
     readonly createdAt: FieldRef<"Entry", 'DateTime'>
@@ -7040,6 +7053,7 @@ export namespace Prisma {
     authorId: 'authorId',
     title: 'title',
     content: 'content',
+    imageUrl: 'imageUrl',
     isCapsule: 'isCapsule',
     unlockDate: 'unlockDate',
     createdAt: 'createdAt'
@@ -7354,6 +7368,7 @@ export namespace Prisma {
     authorId?: StringFilter<"Entry"> | string
     title?: StringFilter<"Entry"> | string
     content?: StringFilter<"Entry"> | string
+    imageUrl?: StringNullableFilter<"Entry"> | string | null
     isCapsule?: BoolFilter<"Entry"> | boolean
     unlockDate?: DateTimeNullableFilter<"Entry"> | Date | string | null
     createdAt?: DateTimeFilter<"Entry"> | Date | string
@@ -7368,6 +7383,7 @@ export namespace Prisma {
     authorId?: SortOrder
     title?: SortOrder
     content?: SortOrder
+    imageUrl?: SortOrderInput | SortOrder
     isCapsule?: SortOrder
     unlockDate?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -7385,6 +7401,7 @@ export namespace Prisma {
     authorId?: StringFilter<"Entry"> | string
     title?: StringFilter<"Entry"> | string
     content?: StringFilter<"Entry"> | string
+    imageUrl?: StringNullableFilter<"Entry"> | string | null
     isCapsule?: BoolFilter<"Entry"> | boolean
     unlockDate?: DateTimeNullableFilter<"Entry"> | Date | string | null
     createdAt?: DateTimeFilter<"Entry"> | Date | string
@@ -7399,6 +7416,7 @@ export namespace Prisma {
     authorId?: SortOrder
     title?: SortOrder
     content?: SortOrder
+    imageUrl?: SortOrderInput | SortOrder
     isCapsule?: SortOrder
     unlockDate?: SortOrderInput | SortOrder
     createdAt?: SortOrder
@@ -7416,6 +7434,7 @@ export namespace Prisma {
     authorId?: StringWithAggregatesFilter<"Entry"> | string
     title?: StringWithAggregatesFilter<"Entry"> | string
     content?: StringWithAggregatesFilter<"Entry"> | string
+    imageUrl?: StringNullableWithAggregatesFilter<"Entry"> | string | null
     isCapsule?: BoolWithAggregatesFilter<"Entry"> | boolean
     unlockDate?: DateTimeNullableWithAggregatesFilter<"Entry"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Entry"> | Date | string
@@ -7684,6 +7703,7 @@ export namespace Prisma {
     id?: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -7698,6 +7718,7 @@ export namespace Prisma {
     authorId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -7708,6 +7729,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7722,6 +7744,7 @@ export namespace Prisma {
     authorId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7734,6 +7757,7 @@ export namespace Prisma {
     authorId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -7743,6 +7767,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -7754,6 +7779,7 @@ export namespace Prisma {
     authorId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -8106,6 +8132,7 @@ export namespace Prisma {
     authorId?: SortOrder
     title?: SortOrder
     content?: SortOrder
+    imageUrl?: SortOrder
     isCapsule?: SortOrder
     unlockDate?: SortOrder
     createdAt?: SortOrder
@@ -8117,6 +8144,7 @@ export namespace Prisma {
     authorId?: SortOrder
     title?: SortOrder
     content?: SortOrder
+    imageUrl?: SortOrder
     isCapsule?: SortOrder
     unlockDate?: SortOrder
     createdAt?: SortOrder
@@ -8128,6 +8156,7 @@ export namespace Prisma {
     authorId?: SortOrder
     title?: SortOrder
     content?: SortOrder
+    imageUrl?: SortOrder
     isCapsule?: SortOrder
     unlockDate?: SortOrder
     createdAt?: SortOrder
@@ -8829,6 +8858,7 @@ export namespace Prisma {
     id?: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -8841,6 +8871,7 @@ export namespace Prisma {
     diaryId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -8958,6 +8989,7 @@ export namespace Prisma {
     authorId?: StringFilter<"Entry"> | string
     title?: StringFilter<"Entry"> | string
     content?: StringFilter<"Entry"> | string
+    imageUrl?: StringNullableFilter<"Entry"> | string | null
     isCapsule?: BoolFilter<"Entry"> | boolean
     unlockDate?: DateTimeNullableFilter<"Entry"> | Date | string | null
     createdAt?: DateTimeFilter<"Entry"> | Date | string
@@ -9048,6 +9080,7 @@ export namespace Prisma {
     id?: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -9060,6 +9093,7 @@ export namespace Prisma {
     authorId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -9443,6 +9477,7 @@ export namespace Prisma {
     id?: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -9456,6 +9491,7 @@ export namespace Prisma {
     authorId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -9508,6 +9544,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9521,6 +9558,7 @@ export namespace Prisma {
     authorId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9564,6 +9602,7 @@ export namespace Prisma {
     diaryId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -9618,6 +9657,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9630,6 +9670,7 @@ export namespace Prisma {
     diaryId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9641,6 +9682,7 @@ export namespace Prisma {
     diaryId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9693,6 +9735,7 @@ export namespace Prisma {
     authorId: string
     title: string
     content: string
+    imageUrl?: string | null
     isCapsule?: boolean
     unlockDate?: Date | string | null
     createdAt?: Date | string
@@ -9739,6 +9782,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9751,6 +9795,7 @@ export namespace Prisma {
     authorId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -9762,6 +9807,7 @@ export namespace Prisma {
     authorId?: StringFieldUpdateOperationsInput | string
     title?: StringFieldUpdateOperationsInput | string
     content?: StringFieldUpdateOperationsInput | string
+    imageUrl?: NullableStringFieldUpdateOperationsInput | string | null
     isCapsule?: BoolFieldUpdateOperationsInput | boolean
     unlockDate?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
