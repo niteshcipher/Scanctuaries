@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PlusCircle, Key, ArrowRight, Compass, LogOut, CheckCircle, Users, ShieldAlert, Check, X, UserMinus, Trash2, Hourglass, Bell } from "lucide-react";
+import { PlusCircle, BookOpen, Key, ArrowRight, Compass, LogOut, CheckCircle, Users, ShieldAlert, Check, UserMinus, Trash2, Hourglass, Bell, Feather, Sparkles, Copy, ChevronDown, EyeOff, Eye, Library } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Diary {
@@ -16,6 +16,7 @@ interface SentRequest {
   id: string;
   status: string;
   diary: {
+    id: string;
     title: string;
     inviteCode: string;
   };
@@ -45,7 +46,7 @@ export default function Dashboard() {
   const [diaries, setDiaries] = useState<Diary[]>([]);
   const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<IncomingRequest[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<string>("");
+  const [currentUserId, setCurrentUserId] = useState<string>("none");
   const [loading, setLoading] = useState(true);
   
   const [diaryTitle, setDiaryTitle] = useState("");
@@ -56,8 +57,16 @@ export default function Dashboard() {
 
   const [selectedMgmtDiary, setSelectedMgmtDiary] = useState<string | null>(null);
   const [mgmtData, setMgmtData] = useState<ManagementData | null>(null);
-  
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  
+  // Custom interactive layout toggles
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showOutboundLogs, setShowOutboundLogs] = useState(false);
+  
+  // Track open member drawers inside the sent/outbound requests module
+  const [viewedSentRequestMembers, setViewedSentRequestMembers] = useState<{ [key: string]: any[] }>({});
+  const [loadingSentRequestMembers, setLoadingSentRequestMembers] = useState<{ [key: string]: boolean }>({});
+  const [expandedSentRequestId, setExpandedSentRequestId] = useState<string | null>(null);
 
   const fetchDashboardData = async () => {
     try {
@@ -67,10 +76,7 @@ export default function Dashboard() {
         if (data.diaries) setDiaries(data.diaries);
         if (data.sentRequests) setSentRequests(data.sentRequests);
         if (data.incomingRequests) setIncomingRequests(data.incomingRequests);
-
-        if (data.currentUserId) {
-          setCurrentUserId(data.currentUserId);
-        }
+        if (data.currentUserId) setCurrentUserId(data.currentUserId);
       }
     } catch (err) {
       console.error("Failed fetching layout resources", err);
@@ -82,6 +88,35 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const fetchSentRequestMembers = async (requestId: string, diaryId: string) => {
+    if (expandedSentRequestId === requestId) {
+      setExpandedSentRequestId(null);
+      return;
+    }
+    
+    setExpandedSentRequestId(requestId);
+    if (viewedSentRequestMembers[diaryId]) return;
+
+    setLoadingSentRequestMembers(prev => ({ ...prev, [diaryId]: true }));
+    try {
+      const res = await fetch(`/api/diaries/manage?diaryId=${diaryId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setViewedSentRequestMembers(prev => ({ ...prev, [diaryId]: data.members || [] }));
+      }
+    } catch (err) {
+      console.error("Could not trace workspace members", err);
+    } finally {
+      setLoadingSentRequestMembers(prev => ({ ...prev, [diaryId]: false }));
+    }
+  };
 
   const handleOpenManagement = async (diaryId: string) => {
     if (selectedMgmtDiary === diaryId) {
@@ -157,7 +192,7 @@ export default function Dashboard() {
     setError(""); setSuccessMsg("");
     try {
       const res = await fetch("/api/diaries", {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: inviteCode }),
       });
@@ -170,202 +205,353 @@ export default function Dashboard() {
     } catch (err: any) { setError(err.message); }
   };
 
-  if (loading) {
-    return <div className="min-h-screen bg-diary-cream flex items-center justify-center font-serif text-stone-500 italic">Entering sanctuaries...</div>;
-  }
-
   return (
-    <main className="min-h-screen w-full bg-diary-cream p-6 md:p-12 text-diary-charcoal selection:bg-diary-blush/30">
-      <nav className="max-w-4xl mx-auto flex justify-between items-center mb-16">
-        <div className="flex items-center space-x-2 text-diary-sage">
-          <Compass size={22} />
-          <span className="font-serif text-lg tracking-wide">My Sanctuaries</span>
-        </div>
-        <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); router.push("/"); }} className="text-stone-900 hover:text-diary-blush transition flex items-center space-x-1 text-xs uppercase tracking-widest font-medium cursor-pointer">
-          <LogOut size={14} /> <span>Exit Space</span>
-        </button>
-      </nav>
+    <main className="min-h-screen w-full bg-diary-cream p-4 sm:p-6 md:p-12 text-diary-charcoal relative font-serif antialiased overflow-x-hidden selection:bg-diary-blush/30">
+      
+      {/* Decorative full-canvas framing lines */}
+      <div className="absolute inset-4 md:inset-6 border border-diary-charcoal/5 pointer-events-none rounded-sm z-0" />
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-diary-blush/10 rounded-full blur-3xl opacity-30 pointer-events-none" />
+      <div className="absolute bottom-12 left-10 w-120 h-120 bg-diary-sage/5 rounded-full blur-3xl opacity-40 pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+      <div className="max-w-5xl mx-auto relative z-10 space-y-10 md:space-y-14">
         
-        {/* LEFT COLUMN: Actions, Incoming Requests & Sent Requests Monitor */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="space-y-4">
-            <h2 className="font-serif text-xl text-stone-900 mb-4">Workspace Options</h2>
-            <button onClick={() => { setActiveAction(activeAction === "create" ? "none" : "create"); setError(""); setSuccessMsg(""); }} className={`w-full text-left p-4 rounded-xl border transition flex items-center space-x-3 cursor-pointer ${activeAction === "create" ? "bg-diary-sage text-white border-diary-sage" : "bg-diary-paper border-stone-200/60"}`}>
-              <PlusCircle size={20} /> <span className="text-sm font-medium">Create Shared Diary</span>
+        {/* TOP LEVEL NAVIGATION HEADER */}
+        <nav className="flex justify-between items-center border-b border-diary-charcoal/5 pb-5">
+          <div className="flex items-center space-x-2.5 text-diary-sage group">
+            <Library size={20} strokeWidth={1.5} className="group-hover:rotate-6 transition duration-300" />
+            <span className="font-serif text-sm uppercase tracking-widest font-bold text-diary-charcoal/40">Sanctuary Desk</span>
+          </div>
+          <button 
+            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); router.push("/"); }} 
+            className="text-diary-charcoal/50 hover:text-diary-blush transition flex items-center space-x-1.5 font-sans text-xs uppercase tracking-widest font-bold cursor-pointer bg-diary-paper/40 hover:bg-diary-paper px-3 py-1.5 rounded-lg border border-diary-charcoal/5 shadow-3xs"
+          >
+            <LogOut size={13} /> <span>Exit Space</span>
+          </button>
+        </nav>
+
+        {/* HERO APP NAME IDENTITY AND WELCOME SECTOR */}
+        <header className="text-center max-w-2xl mx-auto space-y-3.5 py-2">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 px-3 py-1 bg-diary-sage/10 text-diary-sage rounded-full text-[10px] font-sans uppercase tracking-widest font-bold border border-diary-sage/10 shadow-3xs">
+            <Sparkles size={11} className="animate-pulse" /> Shared Memory Ledger
+          </motion.div>
+          <motion.h1 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="font-serif text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-diary-charcoal leading-tight">
+            Volume Sanctuary
+          </motion.h1>
+          <motion.p initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-xs sm:text-sm font-serif italic text-diary-charcoal/50 max-w-md mx-auto leading-relaxed">
+            Pour down your passing moments, lock secure time capsules, and flip across shared leaves with your inner circle.
+          </motion.p>
+        </header>
+
+        {/* CORE INTERACTIVE ACCESS MODULES */}
+        <section className="max-w-xl mx-auto space-y-5">
+          <div className="grid grid-cols-2 gap-3.5">
+            <button 
+              onClick={() => { setActiveAction(activeAction === "create" ? "none" : "create"); setError(""); setSuccessMsg(""); }}
+              className={`py-4 rounded-xl border font-sans text-xs uppercase tracking-wider font-bold transition duration-300 flex flex-col items-center gap-2 cursor-pointer shadow-3xs ${activeAction === "create" ? "bg-diary-sage text-white border-diary-sage shadow-md" : "bg-[#FDF7F2] border-diary-charcoal/10 hover:border-diary-sage/30 hover:bg-diary-paper text-diary-charcoal"}`}
+            >
+              <PlusCircle size={18} strokeWidth={1.75} />
+              <span>Create Diary</span>
             </button>
-            <button onClick={() => { setActiveAction(activeAction === "join" ? "none" : "join"); setError(""); setSuccessMsg(""); }} className={`w-full text-left p-4 rounded-xl border transition flex items-center space-x-3 cursor-pointer ${activeAction === "join" ? "bg-diary-sage text-white border-diary-sage" : "bg-diary-paper border-stone-200/60"}`}>
-              <Key size={20} /> <span className="text-sm font-medium">Enter Invitation Code</span>
+            <button 
+              onClick={() => { setActiveAction(activeAction === "join" ? "none" : "join"); setError(""); setSuccessMsg(""); }}
+              className={`py-4 rounded-xl border font-sans text-xs uppercase tracking-wider font-bold transition duration-300 flex flex-col items-center gap-2 cursor-pointer shadow-3xs ${activeAction === "join" ? "bg-diary-sage text-white border-diary-sage shadow-md" : "bg-[#FDF7F2] border-diary-charcoal/10 hover:border-diary-sage/30 hover:bg-diary-paper text-diary-charcoal"}`}
+            >
+              <Key size={18} strokeWidth={1.75} />
+              <span>Join Circle</span>
             </button>
           </div>
 
-          {error && <p className="text-xs text-red-500 bg-red-50 p-3 rounded-lg border border-red-100">{error}</p>}
-          {successMsg && <p className="text-xs text-diary-sage bg-emerald-50/50 p-3 rounded-lg border border-emerald-100 flex items-center gap-1.5 font-medium"><CheckCircle size={14} /> {successMsg}</p>}
-
-          {/* NEW DASHBOARD MODULE: Incoming Requests From Others Container */}
-          <div className="bg-diary-paper border border-stone-200/60 rounded-xl p-4 space-y-3 shadow-xs">
-            <h3 className="font-serif text-sm font-bold tracking-wide text-stone-700 flex items-center gap-1.5">
-              <Bell size={14} className="text-diary-sage" /> Incoming Requests
-            </h3>
-            {incomingRequests.length === 0 ? (
-              <p className="text-xs italic text-stone-400 pl-1">No incoming knocks pending.</p>
-            ) : (
-              <div className="space-y-2">
-                {incomingRequests.map((req) => (
-                  <div key={req.id} className="text-xs bg-diary-cream/50 p-3 rounded-lg border border-stone-200/30 space-y-2">
-                    <div>
-                      <p className="text-stone-500 font-medium">wants to join <span className="text-stone-800 font-bold">"{req.diary.title}"</span></p>
-                      <p className="text-[11px] text-stone-600 font-serif mt-0.5">— {req.user.name} ({req.user.email})</p>
-                    </div>
-                    <div className="flex justify-end gap-2 pt-1 border-t border-stone-200/30">
-                      <button 
-                        onClick={() => handleManageAction(req.diaryId, req.user.id, "ACCEPT")} 
-                        className="px-2 py-1 bg-diary-sage hover:bg-diary-sage/90 text-white rounded-md text-[10px] uppercase tracking-wider font-bold transition flex items-center gap-1 cursor-pointer"
-                      >
-                        <Check size={10} /> Approve
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Sent Request Layout Tracker Box */}
-          <div className="bg-diary-paper border border-stone-200/60 rounded-xl p-4 space-y-3 shadow-xs">
-            <h3 className="font-serif text-sm font-bold tracking-wide text-stone-700 flex items-center gap-1.5">
-              <Hourglass size={14} className="text-diary-sage" /> Sent Requests Log
-            </h3>
-            {sentRequests.length === 0 ? (
-              <p className="text-xs italic text-stone-400 pl-1">No outbound knocks sent yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {sentRequests.map((req) => (
-                  <div key={req.id} className="text-xs flex justify-between items-center bg-diary-cream/50 p-2.5 rounded-lg border border-stone-200/30">
-                    <div>
-                      <p className="font-medium text-stone-800 truncate max-w-30">{req.diary.title}</p>
-                      <p className="text-[10px] text-stone-400">Code: {req.diary.inviteCode}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-md font-bold text-[9px] uppercase tracking-wide ${
-                      req.status === "PENDING" ? "bg-amber-100 text-amber-700" :
-                      req.status === "ACCEPTED" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                    }`}>
-                      {req.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Active Notebooks Feed Matrix */}
-        <div className="md:col-span-2 space-y-6">
-          <AnimatePresence mode="wait">
+          {/* Action Input Expansion Panels */}
+          <AnimatePresence mode="popLayout">
             {activeAction === "create" && (
-              <motion.form initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} onSubmit={handleCreateDiary} className="bg-diary-paper p-6 rounded-xl border border-stone-200/50 space-y-4 shadow-sm">
-                <h3 className="font-serif text-lg">Name Your Sanctuary</h3>
-                <input type="text" required value={diaryTitle} onChange={(e) => setDiaryTitle(e.target.value)} placeholder="e.g., Our Little Universe..." className="w-full bg-diary-cream/40 border border-stone-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-diary-sage text-stone-800" />
-                <button type="submit" className="bg-diary-sage hover:bg-diary-sage/90 text-white text-xs uppercase tracking-widest font-medium px-4 py-2.5 rounded-lg cursor-pointer transition">Generate Diary</button>
+              <motion.form initial={{ opacity: 0, scale: 0.98, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: -8 }} onSubmit={handleCreateDiary} className="bg-diary-paper p-5 rounded-2xl border border-diary-charcoal/10 space-y-4 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-diary-sage" />
+                <div className="flex items-center gap-2 text-diary-sage font-sans text-[10px] font-bold uppercase tracking-widest">
+                  <Feather size={14} /> <span>Bind a New Sanctuary Volume</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input type="text" required value={diaryTitle} onChange={(e) => setDiaryTitle(e.target.value)} placeholder="Give your volume a name... (e.g., Midnight Letters)" className="flex-1 bg-[#FDF7F2] border border-diary-charcoal/10 rounded-xl px-4 py-2.5 font-serif text-xs focus:outline-none focus:border-diary-sage focus:bg-white transition" />
+                  <button type="submit" className="bg-diary-charcoal hover:bg-diary-sage hover:text-white text-white text-[10px] font-sans font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl cursor-pointer transition shadow-3xs whitespace-nowrap">Create Ledger</button>
+                </div>
               </motion.form>
             )}
+
             {activeAction === "join" && (
-              <motion.form initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} onSubmit={handleJoinDiary} className="bg-diary-paper p-6 rounded-xl border border-stone-200/50 space-y-4 shadow-sm bag">
-                <h3 className="font-serif text-lg">Connect with a Partner</h3>
-                <input type="text" required value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Paste 6-character code" className="w-full bg-diary-cream/40 border border-stone-200 rounded-xl px-4 py-2.5 text-sm tracking-widest uppercase focus:outline-none focus:border-diary-sage text-stone-800" />
-                <button type="submit" className="bg-diary-sage hover:bg-diary-sage/90 text-white text-xs uppercase tracking-widest font-medium px-4 py-2.5 rounded-lg cursor-pointer transition">Send Entrance Request</button>
+              <motion.form initial={{ opacity: 0, scale: 0.98, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: -8 }} onSubmit={handleJoinDiary} className="bg-diary-paper p-5 rounded-2xl border border-diary-charcoal/10 space-y-4 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-diary-blush" />
+                <div className="flex items-center gap-2 text-diary-blush font-sans text-[10px] font-bold uppercase tracking-widest">
+                  <Key size={14} /> <span>Connect to a Shared Volume</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input type="text" required value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Paste the unique 6-character code" className="flex-1 bg-[#FDF7F2] border border-diary-charcoal/10 rounded-xl px-4 py-2.5 font-mono text-xs tracking-widest uppercase focus:outline-none focus:border-diary-sage focus:bg-white transition" />
+                  <button type="submit" className="bg-diary-charcoal hover:bg-diary-sage hover:text-white text-white text-[10px] font-sans font-bold uppercase tracking-widest px-5 py-2.5 rounded-xl cursor-pointer transition shadow-3xs whitespace-nowrap">Send Knock</button>
+                </div>
               </motion.form>
             )}
           </AnimatePresence>
 
-          <div className="space-y-4">
-            <h3 className="font-serif text-xl text-stone-700">Your Active Notebooks</h3>
-            {diaries.length === 0 ? (
-              <div className="bg-diary-paper/60 border border-dashed border-stone-200 rounded-xl p-12 text-center text-stone-400 text-sm italic">No active spaces open yet.</div>
-            ) : (
-              <div className="space-y-4">
-                {diaries.map((diary) => {
-                  const isOwner = diary.creatorId === currentUserId;
-                  const isDeleting = confirmDeleteId === diary.id;
+          {/* Toast Messaging Panels inside focused section layout */}
+          <AnimatePresence mode="popLayout">
+            {error && (
+              <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="text-xs font-sans font-medium text-red-700 bg-red-50/80 p-3 rounded-xl border border-red-200 text-center shadow-3xs">
+                {error}
+              </motion.p>
+            )}
+            {successMsg && (
+              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="text-xs font-sans text-diary-sage bg-emerald-50/80 p-3 rounded-xl border border-emerald-200 flex items-center justify-center gap-2 font-semibold shadow-3xs">
+                <CheckCircle size={14} className="text-emerald-600 shrink-0" /> 
+                <span className="flex-1 text-center leading-normal">{successMsg}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
 
-                  return (
-                    <div key={diary.id} className="bg-diary-paper border border-stone-200/60 p-6 rounded-xl shadow-sm flex flex-col space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="cursor-pointer flex-1" onClick={() => router.push(`/diary/${diary.id}`)}>
-                          <h4 className="font-serif text-xl text-stone-800 hover:text-diary-sage transition flex items-center gap-2">{diary.title} <ArrowRight size={16} className="inline opacity-40" /></h4>
-                          <p className="text-[10px] uppercase tracking-widest text-stone-400 mt-1">Code: {diary.inviteCode} {isOwner && <span className="text-diary-sage font-bold ml-1.5">(Creator)</span>}</p>
-                        </div>
+        {/* PRIMARY ACTIVE SHELF GRID */}
+        <section className="space-y-5">
+          <div className="flex justify-between items-center border-b border-diary-charcoal/5 pb-2">
+            <h3 className="font-serif text-lg font-medium text-diary-charcoal/90 flex items-center gap-2">
+              <Compass size={18} strokeWidth={1.5} className="text-diary-sage" /> Active Notebooks
+            </h3>
+            <span className="font-sans text-[10px] uppercase font-bold tracking-widest text-diary-charcoal/40 bg-diary-charcoal/5 px-2.5 py-1 rounded-md">
+              {diaries.length} Volumes Open
+            </span>
+          </div>
+
+          {diaries.length === 0 ? (
+            <div className="bg-diary-paper/30 border border-dashed border-diary-charcoal/10 rounded-2xl p-14 text-center text-diary-charcoal/40 text-xs italic font-serif shadow-3xs leading-relaxed max-w-md mx-auto">
+              Your desk bookshelves look completely clear.<br />Choose an option above to bind or join a shared private space.
+            </div>
+          ) : (
+            <motion.div layout className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {diaries.map((diary) => {
+                const isOwner = diary.creatorId === currentUserId;
+                const isDeleting = confirmDeleteId === diary.id;
+                const isCopied = copiedCode === diary.inviteCode;
+
+                return (
+                  <motion.div 
+                    key={diary.id} 
+                    layout
+                    whileHover={{ y: -3 }}
+                    className="bg-[#FDF7F2] border border-diary-charcoal/5 p-5 rounded-2xl shadow-3xs hover:shadow-xs flex flex-col justify-between space-y-4 group relative overflow-hidden transition duration-300"
+                  >
+                    {/* Symmetrical Book Spine Accent on cards */}
+                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-diary-sage/20 via-diary-blush/20 to-diary-sage/20 group-hover:from-diary-sage group-hover:via-diary-sage group-hover:to-diary-sage transition-all duration-300" />
+                    
+                    <div className="flex justify-between items-start pl-2">
+                      <div className="flex-1 mr-2 min-w-0">
+                        <h4 
+                          onClick={() => router.push(`/diary/${diary.id}`)}
+                          className="font-serif text-lg font-semibold text-diary-charcoal group-hover:text-diary-sage transition duration-200 flex items-center gap-1.5 leading-tight cursor-pointer truncate"
+                        >
+                          {diary.title} 
+                          <ArrowRight size={13} className="inline opacity-0 group-hover:opacity-100 transform translate-x-1 group-hover:translate-x-0 transition duration-300" />
+                        </h4>
                         
-                        <div className="flex gap-2">
-                          {isOwner && (
-                            <>
-                              <button title="Open diary member management" onClick={() => handleOpenManagement(diary.id)} className="p-2 border border-stone-100 hover:border-diary-sage rounded-xl transition text-stone-400 hover:text-diary-sage cursor-pointer">
-                                <Users size={16} />
-                              </button>
-                              
-                              <button title="Delete diary container" onClick={() => setConfirmDeleteId(isDeleting ? null : diary.id)} className={`p-2 border rounded-xl transition cursor-pointer ${isDeleting ? "bg-rose-50 border-rose-200 text-rose-600" : "border-stone-100 hover:border-rose-200 text-stone-400 hover:text-rose-600"}`}>
-                                <Trash2 size={16} />
-                              </button>
-                            </>
+                        <div 
+                          onClick={() => handleCopyCode(diary.inviteCode)}
+                          className="inline-flex items-center gap-1.5 mt-2 px-2 py-1 bg-diary-paper/70 hover:bg-diary-paper rounded-md border border-diary-charcoal/5 text-[10px] font-mono uppercase tracking-wider text-diary-charcoal/50 cursor-pointer transition select-none group/code shadow-3xs"
+                          title="Click to copy invite code"
+                        >
+                          <span>Code: {diary.inviteCode}</span>
+                          {isCopied ? (
+                            <Check size={11} className="text-emerald-600 animate-scale" />
+                          ) : (
+                            <Copy size={11} className="text-diary-charcoal/20 group-hover/code:text-diary-sage transition" />
                           )}
+                          {isOwner && <span className="text-diary-sage font-sans font-bold ml-1 lowercase italic tracking-normal border-none p-0 bg-transparent opacity-80">(owner)</span>}
                         </div>
                       </div>
-
-                      {/* Confirm Deletion Double Handshake Guard Panel */}
-                      <AnimatePresence>
-                        {isDeleting && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-rose-50/50 border border-rose-100 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                            <div>
-                              <p className="text-xs font-bold text-rose-800">Are you absolutely sure?</p>
-                              <p className="text-[11px] text-rose-600/80">Deleting this sanctuary will instantly erase all nested timeline memories for both users permanently.</p>
-                            </div>
-                            <div className="flex gap-2 self-end sm:self-center">
-                              <button onClick={() => setConfirmDeleteId(null)} className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 rounded-lg text-stone-700 text-xs font-bold transition cursor-pointer">Cancel</button>
-                              <button onClick={() => handleDeleteDiary(diary.id)} className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1"><Trash2 size={12} /> Confirm Erase</button>
-                            </div>
-                          </motion.div>
+                      
+                      <div className="flex gap-1 z-10 font-sans">
+                        {isOwner && (
+                          <>
+                            <button title="Members Management" onClick={() => handleOpenManagement(diary.id)} className={`p-1.5 border rounded-lg transition cursor-pointer ${selectedMgmtDiary === diary.id ? "bg-diary-sage text-white border-diary-sage shadow-3xs" : "border-diary-charcoal/10 hover:border-diary-sage text-diary-charcoal/40 hover:text-diary-sage bg-diary-paper/60"}`}>
+                              <Users size={13} />
+                            </button>
+                            <button title="Erase Sanctuary Container" onClick={() => setConfirmDeleteId(isDeleting ? null : diary.id)} className={`p-1.5 border rounded-lg transition cursor-pointer ${isDeleting ? "bg-rose-50 border-rose-200 text-rose-600 shadow-3xs" : "border-diary-charcoal/10 hover:border-rose-200 text-diary-charcoal/40 hover:text-rose-600 bg-diary-paper/60"}`}>
+                              <Trash2 size={13} />
+                            </button>
+                          </>
                         )}
-                      </AnimatePresence>
-
-                      {/* Administrative management drop drawer */}
-                      <AnimatePresence>
-                        {selectedMgmtDiary === diary.id && mgmtData && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border-t border-stone-100 pt-4 space-y-4 overflow-hidden">
-                            <div>
-                              <h5 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-2 flex items-center gap-1"><ShieldAlert size={12} /> Pending Knocks</h5>
-                              {mgmtData.requests.length === 0 ? <p className="text-xs italic text-stone-400 pl-2">No pending entrance requests.</p> : (
-                                mgmtData.requests.map((req) => (
-                                  <div key={req.id} className="flex justify-between items-center bg-diary-cream/40 p-3 rounded-lg border border-stone-200/30">
-                                    <span className="text-sm font-medium text-stone-700">{req.user.name} ({req.user.email})</span>
-                                    <div className="flex gap-2">
-                                      <button title="Accept entrance request" onClick={() => handleManageAction(diary.id, req.user.id, "ACCEPT")} className="p-1.5 bg-diary-sage text-white rounded-md cursor-pointer"><Check size={14} /></button>
-                                    </div>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-bold uppercase tracking-widest text-stone-400 mb-2 flex items-center gap-1"><Users size={12} /> Connected Members</h5>
-                              {mgmtData.members.length === 0 ? <p className="text-xs italic text-stone-400 pl-2">Sole diary workspace. No partners connected yet.</p> : (
-                                mgmtData.members.map((mem) => (
-                                  <div key={mem.id} className="flex justify-between items-center bg-diary-cream/40 p-3 rounded-lg border border-stone-200/30">
-                                    <span className="text-sm font-medium text-stone-700">{mem.name}</span>
-                                    <button onClick={() => handleManageAction(diary.id, mem.id, "KICK")} className="p-1.5 border border-red-200 hover:bg-red-50 text-red-500 rounded-md cursor-pointer flex items-center gap-1 text-xs font-medium"><UserMinus size={14} /> Revoke Access</button>
-                                  </div>
-                                ))
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      </div>
                     </div>
-                  );
-                })}
+
+                    {/* Deletion confirmation overlay drawer panel */}
+                    <AnimatePresence>
+                      {isDeleting && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-rose-50/70 border border-rose-100 rounded-xl p-3 space-y-3 font-sans relative z-10 overflow-hidden">
+                          <div className="text-[11px]">
+                            <p className="font-bold text-rose-800">Are you completely sure?</p>
+                            <p className="text-rose-600/90 mt-0.5 leading-normal">Erasures are permanent. This will completely destroy all stored timelines and entries for all members.</p>
+                          </div>
+                          <div className="flex gap-1.5 justify-end text-[10px] font-bold uppercase tracking-wider">
+                            <button onClick={() => setConfirmDeleteId(null)} className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-md text-stone-700 transition cursor-pointer">Cancel</button>
+                            <button onClick={() => handleDeleteDiary(diary.id)} className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md transition cursor-pointer flex items-center gap-1"><Trash2 size={10} /> Erase</button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Administrative management drop portal panel slider drawer */}
+                    <AnimatePresence>
+                      {selectedMgmtDiary === diary.id && mgmtData && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border-t border-diary-charcoal/5 pt-3.5 space-y-3.5 font-sans text-xs relative z-10 overflow-hidden">
+                          
+                          <div>
+                            <h5 className="text-[9px] font-bold uppercase tracking-widest text-diary-charcoal/40 mb-1.5 flex items-center gap-1"><ShieldAlert size={12} /> Pending Knocks</h5>
+                            {mgmtData.requests.length === 0 ? <p className="text-[11px] italic text-diary-charcoal/40 pl-1">No pending knottings.</p> : (
+                              <div className="space-y-1.5">
+                                {mgmtData.requests.map((req) => (
+                                  <div key={req.id} className="flex justify-between items-center bg-diary-paper/60 p-2 border border-diary-charcoal/5 rounded-xl shadow-3xs">
+                                    <span className="font-medium text-diary-charcoal max-w-[70%] truncate font-serif">{req.user.name}</span>
+                                    <button title="Accept entrance request" onClick={() => handleManageAction(diary.id, req.user.id, "ACCEPT")} className="p-1.5 bg-diary-sage text-white rounded-lg cursor-pointer hover:bg-diary-sage/90 transition shadow-3xs"><Check size={11} /></button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <h5 className="text-[9px] font-bold uppercase tracking-widest text-diary-charcoal/40 mb-1.5 flex items-center gap-1"><Users size={12} /> Connected Circles</h5>
+                            {mgmtData.members.length === 0 ? <p className="text-[11px] italic text-diary-charcoal/40 pl-1">No friends connected yet.</p> : (
+                              <div className="space-y-1.5">
+                                {mgmtData.members.map((mem) => (
+                                  <div key={mem.id} className="flex justify-between items-center bg-diary-paper/60 p-2 border border-diary-charcoal/5 rounded-xl shadow-3xs">
+                                    <span className="font-medium text-diary-charcoal font-serif">{mem.name}</span>
+                                    <button onClick={() => handleManageAction(diary.id, mem.id, "KICK")} className="px-2 py-1 border border-red-200 hover:bg-red-50 text-red-500 rounded-lg cursor-pointer flex items-center gap-1 text-[10px] font-bold transition"><UserMinus size={11} /> Revoke</button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </section>
+
+        {/* BOTTOM SECTION FOOTER UTILITIES: Knock Management & Outbound Logs */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-diary-charcoal/5">
+          
+          {/* Incoming Knocks Notification Slate */}
+          <div className="bg-diary-paper border border-diary-charcoal/5 rounded-2xl p-5 space-y-3.5 shadow-3xs relative overflow-hidden">
+            <h3 className="font-serif text-sm font-bold tracking-wide text-diary-charcoal/80 flex items-center gap-1.5">
+              <Bell size={14} className="text-diary-blush" /> Incoming Ledger Knocks
+            </h3>
+            {incomingRequests.length === 0 ? (
+              <p className="text-xs italic text-diary-charcoal/40 pl-0.5">No circle access requests pending.</p>
+            ) : (
+              <div className="space-y-2">
+                {incomingRequests.map((req) => (
+                  <div key={req.id} className="bg-[#FDF7F2] p-3 rounded-xl border border-diary-charcoal/5 flex justify-between items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-sans text-diary-charcoal/40">Request into <span className="font-serif font-bold text-diary-charcoal/70">"{req.diary.title}"</span></p>
+                      <p className="text-xs font-serif font-bold text-diary-sage mt-0.5 truncate">— {req.user.name}</p>
+                    </div>
+                    <button 
+                      onClick={() => handleManageAction(req.diaryId, req.user.id, "ACCEPT")} 
+                      className="px-2.5 py-1.5 bg-diary-sage hover:bg-diary-sage/90 text-white rounded-lg text-[9px] font-sans uppercase tracking-wider font-bold transition flex items-center gap-1 cursor-pointer shadow-3xs shrink-0"
+                    >
+                      <Check size={11} /> Accept
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
+
+          {/* Collapsible Outbound Network Logging Drawer */}
+          <div className="bg-diary-paper border border-diary-charcoal/5 rounded-2xl p-5 space-y-3.5 shadow-3xs transition-all duration-300">
+            <button 
+              onClick={() => setShowOutboundLogs(!showOutboundLogs)}
+              className="w-full flex justify-between items-center text-left font-serif text-sm font-bold tracking-wide text-diary-charcoal/80 cursor-pointer group"
+            >
+              <div className="flex items-center gap-1.5">
+                <Hourglass size={14} className="text-diary-sage" /> Outbound Knock History
+              </div>
+              <div className="text-diary-charcoal/30 group-hover:text-diary-sage transition flex items-center gap-1 font-sans text-xs font-normal">
+                {showOutboundLogs ? <EyeOff size={13} /> : <Eye size={13} />}
+              </div>
+            </button>
+            
+            <AnimatePresence>
+              {showOutboundLogs && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }} 
+                  animate={{ opacity: 1, height: "auto" }} 
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-2 overflow-hidden pt-1"
+                >
+                  {sentRequests.length === 0 ? (
+                    <p className="text-xs italic text-diary-charcoal/40 pl-0.5">No pending outbound letters.</p>
+                  ) : (
+                    sentRequests.map((req) => {
+                      const hasDiaryData = req.diary && req.diary.id;
+                      const isRequestExpanded = expandedSentRequestId === req.id;
+                      const diaryMembers = viewedSentRequestMembers[req.diary?.id] || [];
+                      const isMembersLoading = loadingSentRequestMembers[req.diary?.id];
+
+                      return (
+                        <div key={req.id} className="bg-[#FDF7F2] rounded-xl border border-diary-charcoal/5 p-3 space-y-2 hover:border-diary-blush/20 transition">
+                          <div className="flex justify-between items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-serif text-xs font-bold text-diary-charcoal truncate">{req.diary?.title || "Shared Space"}</p>
+                              <p className="text-[9px] font-mono text-diary-charcoal/40 mt-0.5">Code: {req.diary?.inviteCode}</p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-md font-sans font-bold text-[8px] tracking-wider uppercase border shrink-0 ${
+                              req.status === "PENDING" ? "bg-amber-50 border-amber-100 text-amber-700" :
+                              req.status === "ACCEPTED" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-rose-50 border-rose-200 text-rose-700"
+                            }`}>
+                              {req.status}
+                            </span>
+                          </div>
+
+                          {hasDiaryData && (
+                            <div className="pt-1.5 border-t border-diary-charcoal/5 flex flex-col">
+                              <button 
+                                type="button"
+                                onClick={() => fetchSentRequestMembers(req.id, req.diary.id)}
+                                className="text-[9px] text-diary-sage hover:text-diary-charcoal font-sans font-bold uppercase tracking-wider flex items-center gap-1 self-start transition cursor-pointer"
+                              >
+                                <Users size={11} /> {isRequestExpanded ? "Hide Circle" : "View Circle Members"}
+                              </button>
+
+                              <AnimatePresence>
+                                {isRequestExpanded && (
+                                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="pt-1.5 pl-1.5 space-y-1 font-sans text-[11px] text-diary-charcoal/70 overflow-hidden">
+                                    {isMembersLoading ? (
+                                      <span className="italic text-diary-charcoal/40 text-[10px] animate-pulse">Scanning volume ledger...</span>
+                                    ) : diaryMembers.length === 0 ? (
+                                      <span className="italic text-diary-charcoal/40 text-[10px]">No participants registered.</span>
+                                    ) : (
+                                      <div className="space-y-0.5">
+                                        {diaryMembers.map((member, idx) => (
+                                          <div key={member.id || idx} className="flex items-center gap-1 font-serif text-[11px] text-diary-charcoal font-medium">
+                                            <span className="w-1 h-1 bg-diary-sage rounded-full" /> {member.name}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </section>
+
       </div>
     </main>
   );
