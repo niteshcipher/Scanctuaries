@@ -12,6 +12,6 @@ if (!databaseUrl) {
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: databaseUrl, // Passes the Direct Connection port smoothly to the CLI runner
+    url: process.env.DIRECT_URL, // Passes the Direct Connection port smoothly to the CLI runner
   },
 });
