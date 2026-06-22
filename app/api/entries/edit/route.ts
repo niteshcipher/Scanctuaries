@@ -1,20 +1,19 @@
 // app/api/entries/edit/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import { auth } from "@/auth"; // 🔑 Import Auth.js session handling engine natively
 
-async function getUserIdFromCookie(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
-  if (!token) return null;
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
-    return decoded.userId;
-  } catch { return null; }
+export const runtime = "nodejs";
+
+// ✅ REPLACED: Hand off session validation cleanly to Auth.js instance
+async function getUserIdFromSession() {
+  const session = await auth();
+  return session?.user?.id || null;
 }
 
 export async function PUT(request: NextRequest) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { entryId, title, content } = await request.json();
@@ -36,6 +35,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ message: "Memory rewrote smoothly.", entry: updated });
   } catch (err) {
+    console.error("Edit entry error:", err);
     return NextResponse.json({ error: "Failed revising entry ledger." }, { status: 500 });
   }
 }

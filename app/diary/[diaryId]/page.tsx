@@ -58,17 +58,19 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
 
   const fetchEntries = async () => {
     try {
-      const res = await fetch(`/api/entries?diaryId=${diaryId}`);
+      // ✅ FIXED: Added credentials configuration to pass Auth.js cookies safely
+      const res = await fetch(`/api/entries?diaryId=${diaryId}`, {
+        method: "GET",
+        credentials: "same-origin",
+      });
+      
       if (!res.ok) throw new Error("Could not parse repository content.");
       const data = await res.json();
       setEntries(data.entries || []);
 
-      const tokenPayload = document.cookie.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
-      if (tokenPayload) {
-        try {
-          const decoded = JSON.parse(window.atob(tokenPayload.split('.')[1]));
-          setCurrentUserId(decoded.userId);
-        } catch {}
+      // ✅ FIXED: Relying on backend session data payload instead of outdated manual client-side JWT token parsing
+      if (data.currentUserId) {
+        setCurrentUserId(data.currentUserId);
       }
     } catch (err) {
       console.error(err);
@@ -86,9 +88,11 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
     setFormError("");
     setWriting(true);
     try {
+      // ✅ FIXED: Appended credentials framework parameters to execution mapping
       const res = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ 
           diaryId, 
           title, 
@@ -103,7 +107,7 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
 
       setTitle(""); setContent(""); setImageUrl(""); setShowImageInput(false); setIsCapsule(false); setUnlockDate("");
       await fetchEntries();
-      setCurrentPage(0);
+      currentPage === 0 ? fetchEntries() : setCurrentPage(0); // Safely reset to page one
       setMobileActiveTab("read");
     } catch (err: any) { setFormError(err.message); } finally { setWriting(false); }
   };
@@ -112,9 +116,11 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
     if (!currentActiveEntry) return;
     setEditError("");
     try {
+      // ✅ FIXED: Appended credentials framework parameters to update mapping
       const res = await fetch("/api/entries/edit", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ 
           entryId: currentActiveEntry.id, 
           title: editTitle, 
@@ -133,9 +139,11 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
   const handleDeleteEntry = async () => {
     if (!currentActiveEntry) return;
     try {
+      // ✅ FIXED: Appended credentials framework parameters to deletion mapping
       const res = await fetch(`/api/entries`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ entryId: currentActiveEntry.id })
       });
       
@@ -179,7 +187,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
   return (
     <main className="min-h-screen w-full bg-diary-cream p-3 sm:p-6 md:p-8 text-diary-charcoal flex flex-col justify-between gap-6 relative font-serif antialiased overflow-x-hidden selection:bg-diary-blush/30">
       
-      {/* Decorative frame border */}
       <div className="absolute inset-4 md:inset-6 border border-diary-charcoal/5 pointer-events-none rounded-sm z-0" />
 
       {/* Top Header Panel */}
@@ -191,7 +198,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
           <ArrowLeft size={14} /> <span>Dashboard Hub</span>
         </button>
 
-        {/* Adaptive Toggle for Mobile Screen Viewports */}
         <div className="flex lg:hidden bg-linear-to-b from-[#8C6D58]/10 to-[#594235]/10 p-1 rounded-xl border border-diary-charcoal/5 font-sans w-full sm:w-auto">
           <button
             onClick={() => setMobileActiveTab("write")}
@@ -207,7 +213,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
           </button>
         </div>
 
-        {/* Minimal Search Field Module */}
         <div className="relative w-full sm:w-64 self-start sm:self-center font-sans">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-diary-charcoal/30" />
           <input 
@@ -218,30 +223,23 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
         </div>
       </header>
 
-      {/* LUXURIOUS WALNUT LEATHER COVER WRAPPING */}
+      {/* LEATHER COVER WRAPPING */}
       <section className="max-w-6xl w-full mx-auto relative p-1.5 sm:p-3 bg-linear-to-b from-[#8C6D58] via-[#735643] to-[#594235] rounded-2xl sm:rounded-3xl shadow-[0_25px_60px_rgba(115,86,67,0.18)] z-10 border border-[#594235]/40">
         
-        {/* Shadow Overlay Tracks creating premium page-stack depth */}
         <div className="absolute left-0 top-0 bottom-0 w-3 bg-linear-to-r from-black/15 to-transparent rounded-l-2xl pointer-events-none z-30" />
         <div className="absolute right-0 top-0 bottom-0 w-3 bg-linear-to-l from-black/15 to-transparent rounded-r-2xl pointer-events-none z-30" />
 
-        {/* MAIN DISPLAY CANVAS (Peach Parchment Sheets) */}
         <div className="bg-[#FDF7F2] rounded-xl sm:rounded-2xl overflow-hidden min-h-130 lg:min-h-155 relative shadow-inner">
           
-          {/* Symmetrical Book Side Lighting Vignettes */}
           <div className="absolute left-0 top-0 bottom-0 w-6 sm:w-10 bg-linear-to-r from-diary-charcoal/4 to-transparent pointer-events-none z-20" />
           <div className="absolute right-0 top-0 bottom-0 w-6 sm:w-10 bg-linear-to-l from-diary-charcoal/4 to-transparent pointer-events-none z-20" />
           
-          {/* Center Book Spine Binder */}
           <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 bg-linear-to-r from-transparent via-black/10 to-transparent pointer-events-none z-30" />
           <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-diary-charcoal/5 z-20" />
 
-          {/* DESKTOP SPLIT AND MOBILE TAB SHIFT MATRIX VIEWPORT ARCHITECTURE */}
           <div className="flex flex-col lg:grid lg:grid-cols-2 w-full h-full">
 
-            {/* ========================================================= */}
-            {/* LEFT SIDE: Inscription Slate                              */}
-            {/* ========================================================= */}
+            {/* LEFT SIDE: Inscription Slate */}
             <div className={`p-5 sm:p-8 md:p-10 flex-col justify-between border-b lg:border-b-0 lg:border-r border-diary-charcoal/5 relative z-10 ${mobileActiveTab === "write" ? "flex" : "hidden lg:flex"}`}>
               <div className="space-y-6 w-full">
                 <div className="flex items-center space-x-2.5 text-diary-sage"> 
@@ -270,7 +268,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                     />
                   </div>
 
-                  {/* Picture Attachment Input Toggle Block */}
                   <div className="space-y-2">
                     <button
                       type="button"
@@ -325,9 +322,7 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
               <div className="pt-6 border-t border-diary-charcoal/5 text-[11px] font-sans text-diary-charcoal/40 flex items-center justify-between italic mt-6 lg:mt-0"> <span>* Custom encryption enabled.</span> <span>Left Page</span> </div>
             </div>
 
-            {/* ========================================================= */}
-            {/* RIGHT SIDE: Dynamic Sheet Ledger                          */}
-            {/* ========================================================= */}
+            {/* RIGHT SIDE: Dynamic Sheet Ledger */}
             <div className={`p-5 sm:p-8 md:p-10 flex flex-col justify-between w-full h-full relative z-10 ${mobileActiveTab === "read" ? "flex" : "hidden lg:flex"}`}>
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -341,7 +336,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                 ) : (
                   <motion.div key={currentPage} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.25 }} className="h-full flex flex-col justify-between space-y-6 w-full">
                     
-                    {/* Book Page Ribbon Header */}
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-3 border-b border-diary-charcoal/5 pb-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5 text-[10px] font-sans text-diary-charcoal/50 uppercase font-bold tracking-widest">
@@ -354,8 +348,8 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                       </div>
 
                       <div className="flex items-center gap-1.5 self-end sm:self-start font-sans">
-                        {/* UNLOCKED SYSTEM PARAMETER FOR INSTANT ENVIRONMENT TESTING */}
-                        {!currentActiveEntry.isLocked && !isEditing && (
+                        {/* Verify authorship matches before displaying edit tools */}
+                        {currentActiveEntry.authorId === currentUserId && !currentActiveEntry.isLocked && !isEditing && (
                           <>
                             <button onClick={startEditingMode} className="text-[10px] text-diary-charcoal/50 hover:text-diary-sage flex items-center gap-1 uppercase font-bold tracking-wider transition border border-diary-charcoal/10 bg-[#FDF7F2] px-2.5 py-1 rounded-lg cursor-pointer shadow-3xs">
                               <Edit3 size={11} /> Edit
@@ -373,10 +367,8 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                       </div>
                     </div>
 
-                    {/* Main Dynamic Text Render Area Container */}
                     <div className="flex-1 py-2 w-full min-w-0 space-y-4">
                       
-                      {/* Interactive Deletion Safeguard Window */}
                       <AnimatePresence>
                         {isConfirmingDelete && (
                           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-rose-50/70 border border-rose-100 rounded-xl p-3.5 space-y-3 font-sans overflow-hidden">
@@ -393,7 +385,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                       </AnimatePresence>
 
                       {isEditing ? (
-                        /* EDIT MODE OVERLAY WINDOW */
                         <div className="space-y-4 bg-diary-cream/30 p-4 border border-diary-charcoal/10 rounded-xl shadow-2xs font-sans">
                           {editError && <p className="text-[11px] font-medium text-red-700">{editError}</p>}
                           <div>
@@ -426,11 +417,9 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                           </div>
                         </div>
                       ) : (
-                        /* DISPLAY MODE */
                         <>
                           <h3 className="font-serif text-xl sm:text-2xl text-diary-charcoal mb-4 font-semibold tracking-wide leading-tight wrap-break-words">{currentActiveEntry.title}</h3>
                           
-                          {/* Vintage Keepsake Polaroid Card Display */}
                           {currentActiveEntry.imageUrl && !currentActiveEntry.isLocked && (
                             <div className="my-5 p-3 bg-white border border-diary-charcoal/5 rounded-md shadow-md max-w-xs sm:max-w-sm mx-auto rotate-1 hover:rotate-0 transition duration-300 transform select-none">
                               <div className="w-full h-40 sm:h-48 rounded-md overflow-hidden bg-diary-cream border border-diary-charcoal/5 relative">
@@ -473,7 +462,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
       {/* FOOTER NAVIGATION & JUMP PANEL CONTROLS */}
       <footer className="max-w-6xl w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mt-2 border-t border-diary-charcoal/5 pt-4 font-sans">
         
-        {/* Quick Page Direct Jump Form Selector */}
         <form onSubmit={handlePageJumpSubmit} className="flex items-center gap-2 text-xs font-medium text-diary-charcoal/50 order-2 md:order-1">
           <span>Go to page:</span>
           <input 
@@ -483,7 +471,6 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
           <button type="submit" className="px-2.5 py-1 border border-diary-charcoal/10 hover:border-diary-sage bg-[#FDF7F2] text-diary-charcoal/70 rounded-lg uppercase tracking-wider font-bold text-[10px] transition cursor-pointer shadow-3xs">Jump</button>
         </form>
 
-        {/* Dynamic Symmetrical Flip Buttons Ribbon */}
         <div className="flex justify-center items-center gap-3 sm:gap-6 order-1 md:order-2 w-full md:w-auto text-xs font-bold uppercase tracking-wider">
           <button
             disabled={currentPage === 0 || filteredEntries.length === 0 || isEditing}

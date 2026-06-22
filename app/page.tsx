@@ -1,16 +1,17 @@
-import { cookies } from "next/headers";
+// app/page.tsx
+import { auth } from "@/auth"; // 🔑 Import your core Auth.js instance
 import { redirect } from "next/navigation";
 import LandingAuth from "./LandingAuth";
 
 export default async function Page() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token");
+  // 🛡️ Read the authenticated server session natively
+  const session = await auth();
 
-  // If a valid session token exists, bypass the authentication screen completely
-  if (token) {
+  // If a valid session profile is active, fast-forward straight past the landing page
+  if (session) {
     redirect("/dashboard");
   }
 
-  // Otherwise, serve the custom authentication entry design
+  // Otherwise, render the custom entry gate layout
   return <LandingAuth />;
 }

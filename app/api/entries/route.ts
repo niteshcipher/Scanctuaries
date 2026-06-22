@@ -1,32 +1,20 @@
 // app/api/entries/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import { auth } from "@/auth"; // 🔑 Import Auth.js session handling engine natively
 
 export const runtime = "nodejs";
 
-// Helper function to extract user ID from the secure HttpOnly cookie
-async function getUserIdFromCookie(request: Request) {
-  const cookieHeader = request.headers.get("cookie") || "";
-  const token = cookieHeader
-    .split("; ")
-    .find((row) => row.startsWith("token="))
-    ?.split("=")[1];
-
-  if (!token) return null;
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
-    return decoded.userId;
-  } catch {
-    return null;
-  }
+// ✅ Hand off session validation cleanly to Auth.js instance
+async function getUserIdFromSession() {
+  const session = await auth();
+  return session?.user?.id || null;
 }
 
 // 1. SAVE A NEW DIARY ENTRY
 export async function POST(request: Request) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -49,16 +37,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Access Denied. You do not belong to this diary." }, { status: 403 });
     }
 
-    // Save the entry matching our extended schema
+    // 🔬 TIMEZONE ADAPTIVE FIX: Set the capsule to unlock at the very end of the chosen day (23:59:59.999)
+    let parsedUnlockDate: Date | null = null;
+    if (isCapsule && unlockDate) {
+      const targetDate = new Date(unlockDate);
+      targetDate.setUTCHours(23, 59, 59, 999);
+      parsedUnlockDate = targetDate;
+    }
+
     const newEntry = await prisma.entry.create({
       data: {
         diaryId,
         authorId: userId,
         title,
         content,
-        imageUrl: imageUrl || null, // Saves image reference string
+        imageUrl: imageUrl || null,
         isCapsule: isCapsule || false,
-        unlockDate: isCapsule && unlockDate ? new Date(unlockDate) : null,
+        unlockDate: parsedUnlockDate,
       }
     });
 
@@ -72,7 +67,7 @@ export async function POST(request: Request) {
 // 2. FETCH ALL ENTRIES FOR A DIARY
 export async function GET(request: Request) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -105,22 +100,34 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" }
     });
 
-    const now = new Date();
+    // Get today's local date at midnight to check against capsule unlocks reliably
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     // Mask locked capsule contents at the server layer
     const processedEntries = entries.map(entry => {
-      if (entry.isCapsule && entry.unlockDate && entry.unlockDate > now) {
-        return {
-          ...entry,
-          content: "🔒 This memory is sealed inside a capsule until a future date.",
-          imageUrl: null, // Clear out the attached snapshot reference if locked
-          isLocked: true
-        };
+      if (entry.isCapsule && entry.unlockDate) {
+        const entryUnlockDate = new Date(entry.unlockDate);
+        entryUnlockDate.setHours(0, 0, 0, 0);
+
+        // If the unlock date is strictly after today's date, lock it
+        if (entryUnlockDate > today) {
+          return {
+            ...entry,
+            content: "🔒 This memory is sealed inside a capsule until a future date.",
+            imageUrl: null, 
+            isLocked: true
+          };
+        }
       }
       return { ...entry, isLocked: false };
     });
 
-    return NextResponse.json({ entries: processedEntries }, { status: 200 });
+    return NextResponse.json({ 
+      entries: processedEntries,
+      currentUserId: userId 
+    }, { status: 200 });
+
   } catch (error) {
     console.error("Fetch entries error:", error);
     return NextResponse.json({ error: "Server error fetching entries." }, { status: 500 });
@@ -130,7 +137,7 @@ export async function GET(request: Request) {
 // 3. UPDATE AN EXISTING ENTRY (PUT)
 export async function PUT(request: Request) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -146,7 +153,6 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Memory page not found." }, { status: 404 });
     }
 
-    // Guardrail: Verify ownership before mutating history files
     if (existingEntry.authorId !== userId) {
       return NextResponse.json({ error: "Forbidden. You can only edit your own memories." }, { status: 403 });
     }
@@ -166,7 +172,7 @@ export async function PUT(request: Request) {
 // 4. ERASE/DELETE AN ENTRY (DELETE)
 export async function DELETE(request: Request) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -182,7 +188,6 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Memory page location not found." }, { status: 404 });
     }
 
-    // Guardrail: Verify ownership before deleting memory page permanently
     if (existingEntry.authorId !== userId) {
       return NextResponse.json({ error: "Forbidden. You can only erase your own pages." }, { status: 403 });
     }

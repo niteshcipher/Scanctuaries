@@ -1,10 +1,7 @@
 // app/api/auth/login/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { signIn } from "@/auth";
 
-// 🚀 Keeps the runtime aligned with your working registration configuration
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
@@ -15,52 +12,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    // 1. Find user in database
-    const user = await prisma.user.findUnique({ where: { email } });
-    
-    // Log the event to matching terminal logs
-    console.log(`prisma:query Attempting login look up for email: ${email}`);
+    // Hand execution over to Auth.js Credentials system
+    await signIn("credentials", {
+      email,
+      password,
+      redirect: false, // Prevents server-side redirects so your frontend can handle it
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
-
-    // 2. Compare hashed passwords
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-    }
-
-    // 3. Create an encrypted JWT Session Token
-    const token = jwt.sign(
-      { userId: user.id, email: user.email },
-      process.env.JWT_SECRET || "fallback_secret",
-      { expiresIn: "7d" }
-    );
-
-    // 4. Return profile data and set the cookie container
-    const response = NextResponse.json({
+    return NextResponse.json({
       message: "Welcome back!",
-      user: { id: user.id, name: user.name, email: user.email },
-    });
+    }, { status: 200 });
 
-    response.cookies.set("token", token, {
-      httpOnly: true, // Crucial shield against browser scripts reading the key
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 1 week duration
-      path: "/",
-    });
-
-    return response;
   } catch (error: any) {
-  console.error("FULL SIGNUP ERROR:", error);
+    // Auth.js throws a specific error on failure
+    if (error.type === "CredentialsSignin") {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
 
-  return NextResponse.json(
-    {
-      error: error?.message || String(error),
-      full: JSON.stringify(error, null, 2)
-    },
-    { status: 500 }
-  );
-}
+    console.error("LOGIN API ERROR:", error);
+    return NextResponse.json(
+      { error: "Something went wrong during login." },
+      { status: 500 }
+    );
+  }
 }

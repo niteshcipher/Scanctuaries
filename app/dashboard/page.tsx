@@ -70,7 +70,17 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const res = await fetch("/api/diaries", { method: "GET" });
+      // ✅ FIXED: Explicitly defined credentials parameter so Auth.js tokens are carried across
+      const res = await fetch("/api/diaries", { 
+        method: "GET",
+        credentials: "same-origin"
+      });
+      
+      if (res.status === 401) {
+        router.push("/");
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         if (data.diaries) setDiaries(data.diaries);
@@ -106,7 +116,7 @@ export default function Dashboard() {
 
     setLoadingSentRequestMembers(prev => ({ ...prev, [diaryId]: true }));
     try {
-      const res = await fetch(`/api/diaries/manage?diaryId=${diaryId}`);
+      const res = await fetch(`/api/diaries/manage?diaryId=${diaryId}`, { credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         setViewedSentRequestMembers(prev => ({ ...prev, [diaryId]: data.members || [] }));
@@ -126,7 +136,7 @@ export default function Dashboard() {
     }
     setError(""); setSuccessMsg("");
     try {
-      const res = await fetch(`/api/diaries/manage?diaryId=${diaryId}`);
+      const res = await fetch(`/api/diaries/manage?diaryId=${diaryId}`, { credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         setSelectedMgmtDiary(diaryId);
@@ -141,6 +151,7 @@ export default function Dashboard() {
       const res = await fetch("/api/diaries/manage", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ diaryId, targetUserId, action })
       });
       const data = await res.json();
@@ -158,6 +169,7 @@ export default function Dashboard() {
       const res = await fetch("/api/diaries/delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ diaryId })
       });
       const data = await res.json();
@@ -176,6 +188,7 @@ export default function Dashboard() {
       const res = await fetch("/api/diaries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ title: diaryTitle }),
       });
       const data = await res.json();
@@ -194,6 +207,7 @@ export default function Dashboard() {
       const res = await fetch("/api/diaries", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({ code: inviteCode.trim().toUpperCase(), action: "JOIN"}),
       });
       const data = await res.json();
@@ -208,7 +222,6 @@ export default function Dashboard() {
   return (
     <main className="min-h-screen w-full bg-diary-cream p-4 sm:p-6 md:p-12 text-diary-charcoal relative font-serif antialiased overflow-x-hidden selection:bg-diary-blush/30">
       
-      {/* Decorative full-canvas framing lines */}
       <div className="absolute inset-4 md:inset-6 border border-diary-charcoal/5 pointer-events-none rounded-sm z-0" />
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-diary-blush/10 rounded-full blur-3xl opacity-30 pointer-events-none" />
       <div className="absolute bottom-12 left-10 w-120 h-120 bg-diary-sage/5 rounded-full blur-3xl opacity-40 pointer-events-none" />
@@ -222,7 +235,11 @@ export default function Dashboard() {
             <span className="font-serif text-sm uppercase tracking-widest font-bold text-diary-charcoal/40">Sanctuary Desk</span>
           </div>
           <button 
-            onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); router.push("/"); }} 
+            // ✅ FIXED: Clean routing destination for the updated Auth.js manual signout endpoint route
+            onClick={async () => { 
+              await fetch("/api/auth/logout", { method: "POST", credentials: "same-origin" }); 
+              router.push("/"); 
+            }} 
             className="text-diary-charcoal/50 hover:text-diary-blush transition flex items-center space-x-1.5 font-sans text-xs uppercase tracking-widest font-bold cursor-pointer bg-diary-paper/40 hover:bg-diary-paper px-3 py-1.5 rounded-lg border border-diary-charcoal/5 shadow-3xs"
           >
             <LogOut size={13} /> <span>Exit Space</span>
@@ -261,7 +278,6 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Action Input Expansion Panels */}
           <AnimatePresence mode="popLayout">
             {activeAction === "create" && (
               <motion.form initial={{ opacity: 0, scale: 0.98, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.98, y: -8 }} onSubmit={handleCreateDiary} className="bg-diary-paper p-5 rounded-2xl border border-diary-charcoal/10 space-y-4 shadow-sm relative overflow-hidden">
@@ -290,7 +306,6 @@ export default function Dashboard() {
             )}
           </AnimatePresence>
 
-          {/* Toast Messaging Panels inside focused section layout */}
           <AnimatePresence mode="popLayout">
             {error && (
               <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="text-xs font-sans font-medium text-red-700 bg-red-50/80 p-3 rounded-xl border border-red-200 text-center shadow-3xs">
@@ -335,8 +350,7 @@ export default function Dashboard() {
                     whileHover={{ y: -3 }}
                     className="bg-[#FDF7F2] border border-diary-charcoal/5 p-5 rounded-2xl shadow-3xs hover:shadow-xs flex flex-col justify-between space-y-4 group relative overflow-hidden transition duration-300"
                   >
-                    {/* Symmetrical Book Spine Accent on cards */}
-                    <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-diary-sage/20 via-diary-blush/20 to-diary-sage/20 group-hover:from-diary-sage group-hover:via-diary-sage group-hover:to-diary-sage transition-all duration-300" />
+                    <div className="absolute top-0 left-0 w-1 h-full bg-linear-to-b from-diary-sage/20 via-diary-blush/20 to-diary-sage/20 group-hover:from-diary-sage group-hover:via-diary-sage group-hover:to-diary-sage transition-all duration-300" />
                     
                     <div className="flex justify-between items-start pl-2">
                       <div className="flex-1 mr-2 min-w-0">
@@ -377,7 +391,6 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Deletion confirmation overlay drawer panel */}
                     <AnimatePresence>
                       {isDeleting && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-rose-50/70 border border-rose-100 rounded-xl p-3 space-y-3 font-sans relative z-10 overflow-hidden">
@@ -393,11 +406,9 @@ export default function Dashboard() {
                       )}
                     </AnimatePresence>
 
-                    {/* Administrative management drop portal panel slider drawer */}
                     <AnimatePresence>
                       {selectedMgmtDiary === diary.id && mgmtData && (
                         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="border-t border-diary-charcoal/5 pt-3.5 space-y-3.5 font-sans text-xs relative z-10 overflow-hidden">
-                          
                           <div>
                             <h5 className="text-[9px] font-bold uppercase tracking-widest text-diary-charcoal/40 mb-1.5 flex items-center gap-1"><ShieldAlert size={12} /> Pending Knocks</h5>
                             {mgmtData.requests.length === 0 ? <p className="text-[11px] italic text-diary-charcoal/40 pl-1">No pending knottings.</p> : (
@@ -435,10 +446,8 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* BOTTOM SECTION FOOTER UTILITIES: Knock Management & Outbound Logs */}
+        {/* BOTTOM SECTION FOOTER UTILITIES */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2 border-t border-diary-charcoal/5">
-          
-          {/* Incoming Knocks Notification Slate */}
           <div className="bg-diary-paper border border-diary-charcoal/5 rounded-2xl p-5 space-y-3.5 shadow-3xs relative overflow-hidden">
             <h3 className="font-serif text-sm font-bold tracking-wide text-diary-charcoal/80 flex items-center gap-1.5">
               <Bell size={14} className="text-diary-blush" /> Incoming Ledger Knocks
@@ -465,7 +474,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Collapsible Outbound Network Logging Drawer */}
           <div className="bg-diary-paper border border-diary-charcoal/5 rounded-2xl p-5 space-y-3.5 shadow-3xs transition-all duration-300">
             <button 
               onClick={() => setShowOutboundLogs(!showOutboundLogs)}

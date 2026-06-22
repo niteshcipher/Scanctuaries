@@ -1,28 +1,19 @@
-// app/api/diaries/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import { auth } from "@/auth"; // <-- Import the auth framework from your root auth.ts
 
 export const runtime = "nodejs";
 
-// Helper function to extract user ID from the secure HttpOnly cookie
-async function getUserIdFromCookie(request: NextRequest) {
-  const token = request.cookies.get("token")?.value;
-
-  if (!token) return null;
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
-    return decoded.userId;
-  } catch {
-    return null;
-  }
+// ✅ REPLACED: Use Auth.js natively instead of custom jwt.verify
+async function getUserIdFromSession() {
+  const session = await auth();
+  return session?.user?.id || null;
 }
 
-// ✅ FIXED: Changed parameter type from Request to NextRequest
+// 1. GET ALL DIARIES & REQUESTS
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const connectedDiaries = await prisma.diary.findMany({
@@ -30,7 +21,6 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" }
     });
 
-    // Pull requests sent by the current user along with target diary details
     const userSentRequests = await prisma.joinRequest.findMany({
       where: { userId: userId },
       include: {
@@ -63,10 +53,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// 1. CREATE A NEW DIARY (Generates an Invite Code & assigns Admin Creator)
+// 2. CREATE A NEW DIARY
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized. Please login first." }, { status: 401 });
     }
@@ -76,10 +66,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please give your diary a title" }, { status: 400 });
     }
 
-    // Generate a beautiful unique 6-character partner invite code
     const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-    // Save diary and immediately connect the creator as a member
     const newDiary = await prisma.diary.create({
       data: {
         title,
@@ -101,10 +89,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 2. REQUEST TO JOIN A DIARY (Creates a PENDING Handshake Knock)
+// 3. REQUEST TO JOIN A DIARY (PUT)
 export async function PUT(request: NextRequest) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserIdFromSession();
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized. Please login first." }, { status: 401 });
     }
@@ -116,7 +104,6 @@ export async function PUT(request: NextRequest) {
 
     const cleanCode = code.trim().toUpperCase();
 
-    // Find the diary matching that specific invite code
     const targetDiary = await prisma.diary.findUnique({
       where: { inviteCode: cleanCode },
       select: {
@@ -134,12 +121,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Invalid invitation code. Please check again." }, { status: 404 });
     }
 
-    // Prevent duplicate joins or self-requests
     if (targetDiary.users.some((member) => member.id === userId)) {
       return NextResponse.json({ error: "You are already part of this diary." }, { status: 400 });
     }
 
-    // Exclusivity Guard: Block knocks if the diary is already populated by a partner
     const hasPartner = targetDiary.users.some(member => member.id !== targetDiary.creatorId);
     if (hasPartner) {
       return NextResponse.json({ error: "This private diary room is already occupied by an active partner." }, { status: 400 });
@@ -158,7 +143,6 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "You have already sent an entrance request to this space." }, { status: 400 });
     }
 
-    // 🕊️ Create the secure pending request entry (The "Knock" Handshake)
     await prisma.joinRequest.create({
       data: {
         diaryId: targetDiary.id,
@@ -173,11 +157,9 @@ export async function PUT(request: NextRequest) {
 
   } catch (error: any) {
     console.error("Join request error:", error);
-    
     if (error.code === "P2002") {
       return NextResponse.json({ error: "You have already sent an entrance request to this space." }, { status: 400 });
     }
-
     return NextResponse.json({ error: "Could not file connection request request." }, { status: 500 });
   }
 }

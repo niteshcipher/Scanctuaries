@@ -37,19 +37,21 @@
 
 
 
-
-import "dotenv/config";
+// lib/prisma.ts
 import { PrismaClient } from "@/generated/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+
+// 🛡️ SECURITY GUARD: Block runtime bundle rendering if this file leaks into a "use client" view
+if (typeof window !== "undefined"|| process.env.NEXT_RUNTIME === "edge") {
+  throw new Error("Internal Server Error: PrismaClient cannot be evaluated or rendered on the browser client.");
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
 // 1. Pick the correct connection string based on the environment
-// Local development can experience authentication/pool errors with Supabase's transaction pooler.
-// We fallback to DIRECT_URL locally if needed, but prioritize the pooler for Vercel.
 const isDev = process.env.NODE_ENV === "development";
 const connectionString = isDev 
   ? (process.env.DIRECT_URL ?? process.env.DATABASE_URL)
@@ -77,6 +79,8 @@ export const prisma =
     log: isDev ? ["query", "error", "warn"] : ["error"],
   });
 
-if (!isDev) {
+// ✅ FIXED CRITICAL GAP: Keep the database client cached in globalThis across ALL development hot-reloads.
+// Changing this to run only in production or dev can cause connection pooling exhaustion overflows.
+if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }

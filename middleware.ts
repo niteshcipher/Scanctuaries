@@ -1,32 +1,33 @@
 // middleware.ts
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import NextAuth from "next-auth";
+import authConfig from "./auth.config"; // 🛡️ Must point to the light config!
 
-export function middleware(request: NextRequest) {
-  // 1. Grab the secure HttpOnly session token from incoming cookies
-  const token = request.cookies.get("token")?.value;
-  
-  const { pathname } = request.nextUrl;
+const { auth } = NextAuth(authConfig);
 
-  // 2. Define your security perimeters
+export default auth((req) => {
+  const isLoggedIn = !!req.auth;
+  const { pathname } = req.nextUrl;
+
   const isAuthPage = pathname === "/";
   const isProtectedPage = pathname.startsWith("/dashboard") || pathname.startsWith("/diary");
 
-  // Case A: User is trying to access dashboard/diary without a token -> Boot them to login
-  if (!token && isProtectedPage) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Case A: Not logged in and trying to view diaries -> Kick them to landing page
+  if (!isLoggedIn && isProtectedPage) {
+    return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
-  // Case B: User is already logged in but tries to go back to the login page -> Fast-forward to dashboard
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // Case B: Logged in and trying to view the login screen -> Send them to the dashboard
+  if (isLoggedIn && isAuthPage) {
+    return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
   }
 
-  // Allow all other requests (API routes, static assets, etc.) to pass through safely
+  // ✅ SAFELY CONTINUE: If they are NOT logged in and are on an Auth page (like "/"),
+  // let them pass through instead of firing another redirect!
   return NextResponse.next();
-}
+});
 
-// 🎯 Optimization: Only run this middleware on front-end pages (ignores image assets, scripts, etc.)
 export const config = {
+  // Matches base pages, dashboard sub-directories, and diary sub-directories
   matcher: ["/", "/dashboard/:path*", "/diary/:path*"],
 };

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Feather, ArrowLeft, Mail, Lock, User, Sparkles, CheckCircle2 } from "lucide-react";
+import { Feather, ArrowLeft, Mail, Lock, User, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react"; 
 
 export default function LandingAuth() {
   const router = useRouter();
@@ -49,14 +50,12 @@ export default function LandingAuth() {
   return (
     <main className="min-h-screen w-full flex items-center justify-center p-4 md:p-8 bg-diary-cream text-diary-charcoal relative font-serif antialiased overflow-x-hidden selection:bg-diary-blush/30">
       
-      {/* Editorial Decorative Background Details */}
       <div className="absolute inset-4 md:inset-6 border border-diary-charcoal/5 pointer-events-none rounded-sm" />
       <div className="absolute top-0 right-0 w-125 h-125 bg-diary-blush/10 rounded-full blur-3xl opacity-60 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-125 h-125 bg-diary-sage/5 rounded-full blur-3xl opacity-60 pointer-events-none" />
 
       <AnimatePresence mode="wait">
         {!showAuthForm ? (
-          /* ================= ORIGINAL MARKETING VIEW ================= */
           <motion.div
             key="marketing"
             initial={{ opacity: 0, y: 15 }}
@@ -119,13 +118,13 @@ export default function LandingAuth() {
 
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-center w-full max-w-md">
               <button
-                onClick={() => { setIsLogin(true); setShowAuthForm(true); }}
+                onClick={() => { setIsLogin(true); setShowAuthForm(true); setError(""); }}
                 className="w-full sm:w-1/2 bg-diary-charcoal hover:bg-diary-charcoal/90 text-diary-cream font-medium px-6 py-3.5 rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer text-sm font-sans tracking-wide"
               >
                 Log In
               </button>
               <button
-                onClick={() => { setIsLogin(false); setShowAuthForm(true); }}
+                onClick={() => { setIsLogin(false); setShowAuthForm(true); setError(""); }}
                 className="w-full sm:w-1/2 bg-diary-paper border border-diary-charcoal/20 hover:bg-diary-cream/50 text-diary-charcoal font-medium px-6 py-3.5 rounded-xl transition shadow-xs cursor-pointer text-sm font-sans tracking-wide"
               >
                 Create Account
@@ -133,7 +132,6 @@ export default function LandingAuth() {
             </div>
           </motion.div>
         ) : (
-          /* ================= NEW BEAUTIFUL HIGH-ATTRACTIVE SPLIT-PANE VIEW ================= */
           <motion.div
             key="auth"
             initial={{ opacity: 0, scale: 0.99, y: 10 }}
@@ -142,12 +140,11 @@ export default function LandingAuth() {
             transition={{ duration: 0.4, ease: "easeInOut" }}
             className="w-full max-w-4xl bg-diary-paper border border-diary-charcoal/10 rounded-2xl shadow-[0_20px_50px_rgba(31,36,33,0.06)] overflow-hidden grid grid-cols-1 md:grid-cols-12 z-10 relative min-h-137.5"
           >
-            {/* Left Aesthetic Pane (Hidden on Mobile) */}
             <div className="hidden md:flex md:col-span-5 bg-linear-to-br from-diary-charcoal to-[#2a302c] p-10 flex-col justify-between text-diary-cream relative">
               <div className="absolute inset-0 bg-[radial-gradient(#5f7259_1px,transparent_1px)] bg-size-[16px_16px] opacity-10" />
               
               <button
-                onClick={() => setShowAuthForm(false)}
+                onClick={() => { setShowAuthForm(false); setError(""); }}
                 className="text-diary-cream/60 hover:text-diary-cream transition flex items-center gap-2 font-sans text-xs font-medium tracking-wider uppercase cursor-pointer z-10 w-fit"
               >
                 <ArrowLeft size={14} /> Go Back
@@ -172,18 +169,15 @@ export default function LandingAuth() {
               </div>
             </div>
 
-            {/* Right Interactive Form Pane */}
             <div className="col-span-1 md:col-span-7 p-8 md:p-12 flex flex-col justify-center relative bg-white">
-              {/* Mobile Only Go Back Button */}
               <button
-                onClick={() => setShowAuthForm(false)}
+                onClick={() => { setShowAuthForm(false); setError(""); }}
                 className="md:hidden absolute top-6 left-6 text-diary-charcoal/50 hover:text-diary-charcoal transition flex items-center gap-1 font-sans text-xs font-medium cursor-pointer"
               >
                 <ArrowLeft size={14} /> Go Back
               </button>
 
               <div className="max-w-md w-full mx-auto">
-                {/* Visual Novel Headers */}
                 <div className="mb-8 text-center md:text-left">
                   <span className="font-mono text-[10px] tracking-widest text-diary-sage uppercase font-bold block mb-1">
                     {isLogin ? "SECURE ACCESS" : "LEDGER REGISTRATION"}
@@ -194,13 +188,23 @@ export default function LandingAuth() {
                 </div>
 
                 {error && (
-                  <motion.p 
+                  <motion.div 
                     initial={{ opacity: 0, x: -5 }} 
                     animate={{ opacity: 1, x: 0 }} 
-                    className="text-xs font-sans text-red-700 bg-red-50 border border-red-200 p-3 rounded-xl mb-6 text-center font-medium flex items-center justify-center gap-2"
+                    className="text-xs font-sans text-red-700 bg-red-50 border border-red-200 p-3 rounded-xl mb-6 text-center font-medium flex flex-col items-center justify-center gap-1.5"
                   >
                     <span>{error}</span>
-                  </motion.p>
+                    
+                    {error.includes("already registered") && (
+                      <button
+                        type="button"
+                        onClick={() => { setIsLogin(true); setError(""); }}
+                        className="text-[11px] font-sans font-bold text-diary-sage hover:underline underline-offset-2 transition cursor-pointer"
+                      >
+                        Switch to Login Window →
+                      </button>
+                    )}
+                  </motion.div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5 font-sans text-sm">
@@ -222,7 +226,7 @@ export default function LandingAuth() {
                           onChange={(e) => setName(e.target.value)}
                           className="w-full bg-diary-cream/30 border border-diary-charcoal/10 rounded-xl px-4 py-3 font-serif placeholder-diary-charcoal/30 focus:outline-none focus:border-diary-sage focus:bg-white transition shadow-xs focus:shadow-md"
                           placeholder="What should your friends call you?"
-                          required
+                          required={!isLogin}
                         />
                       </motion.div>
                     )}
@@ -259,14 +263,34 @@ export default function LandingAuth() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-diary-sage hover:bg-diary-sage/90 text-white font-medium text-sm py-3.5 rounded-xl transition duration-200 cursor-pointer disabled:opacity-40 mt-8 shadow-md shadow-diary-sage/10 active:scale-[0.99] transform"
+                    className="w-full bg-diary-sage hover:bg-diary-sage/90 text-white font-medium text-sm py-3.5 rounded-xl transition duration-200 cursor-pointer disabled:opacity-40 mt-6 shadow-md shadow-diary-sage/10 active:scale-[0.99] transform"
                   >
                     <span>{loading ? "Writing to ledger..." : isLogin ? "Enter Sanctuary" : "Complete Registration"}</span>
                   </button>
+
+                  <div className="relative flex py-2 items-center text-[10px] uppercase text-diary-charcoal/30 font-sans tracking-widest font-bold">
+                    <div className="flex-grow border-t border-diary-charcoal/10"></div>
+                    <span className="flex-shrink mx-3">Or connect via</span>
+                    <div className="flex-grow border-t border-diary-charcoal/10"></div>
+                  </div>
+
+                  {/* 🚀 FIXED LOGLABEL TRANSLATION CONDITIONAL */}
+                  <button
+                    type="button"
+                    onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+                    className="w-full bg-white hover:bg-stone-50 text-stone-700 border border-diary-charcoal/10 font-sans font-bold text-xs uppercase tracking-wider py-3.5 rounded-xl transition flex items-center justify-center gap-2.5 shadow-3xs cursor-pointer active:scale-[0.99] transform"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#EA4335" d="M12 5.04c1.64 0 3.12.56 4.28 1.67l3.2-3.2C17.52 1.58 14.92 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.78 2.93c.88-2.64 3.38-4.45 6.83-4.45z"/>
+                      <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.43h6.44c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.39-4.87 3.39-8.48z"/>
+                      <path fill="#FBBC05" d="M5.17 10.49l-3.78-2.93C.51 9.24 0 10.57 0 12s.51 2.76 1.39 4.44l3.78-2.93c-.22-.66-.34-1.37-.34-2.07s.12-1.41.34-2.07z"/>
+                      <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.66-2.84c-1.1.74-2.51 1.18-4.3 1.18-3.45 0-5.95-1.81-6.83-4.45L1.39 16.9C3.37 20.33 7.35 23 12 23z"/>
+                    </svg>
+                    <span>{isLogin ? "Login with Google Account" : "Register with Google Account"}</span>
+                  </button>
                 </form>
 
-                {/* Footer Switch Link */}
-                <div className="border-t border-diary-charcoal/5 mt-8 pt-6 text-center">
+                <div className="border-t border-diary-charcoal/5 mt-6 pt-5 text-center">
                   <button
                     type="button"
                     onClick={() => { setIsLogin(!isLogin); setError(""); }}
