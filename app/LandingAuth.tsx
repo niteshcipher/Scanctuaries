@@ -269,12 +269,12 @@ export default function LandingAuth() {
                   </button>
 
                   <div className="relative flex py-2 items-center text-[10px] uppercase text-diary-charcoal/30 font-sans tracking-widest font-bold">
-                    <div className="flex-grow border-t border-diary-charcoal/10"></div>
-                    <span className="flex-shrink mx-3">Or connect via</span>
-                    <div className="flex-grow border-t border-diary-charcoal/10"></div>
+                    <div className="grow border-t border-diary-charcoal/10"></div>
+                    <span className="shrink mx-3">Or connect via</span>
+                    <div className="grow border-t border-diary-charcoal/10"></div>
                   </div>
 
-                  {/* 🚀 FIXED LOGLABEL TRANSLATION CONDITIONAL */}
+                  {/* 🚀 FIXED LOGLABEL TRANSLATION --------CONDITIONAL */}
                   <button
                     type="button"
                     onClick={() => signIn("google", { callbackUrl: "/dashboard" })}

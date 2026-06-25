@@ -117,7 +117,7 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
     setEditError("");
     try {
       // ✅ FIXED: Appended credentials framework parameters to update mapping
-      const res = await fetch("/api/entries/edit", {
+      const res = await fetch("/api/entries", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",

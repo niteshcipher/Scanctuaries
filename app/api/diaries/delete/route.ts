@@ -1,25 +1,24 @@
 // app/api/diaries/delete/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import jwt from "jsonwebtoken";
+import { auth } from "@/auth"; // 🔑 Import Auth.js session handling engine natively
 
-async function getUserIdFromCookie(request: Request) {
-  const cookieHeader = request.headers.get("cookie") || "";
-  const token = cookieHeader.split("; ").find(row => row.startsWith("token="))?.split("=")[1];
-  if (!token) return null;
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
-    return decoded.userId;
-  } catch { return null; }
-}
+export const runtime = "nodejs";
 
 export async function DELETE(request: Request) {
   try {
-    const userId = await getUserIdFromCookie(request);
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // 🎯 Extract the authenticated user session via Auth.js securely
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized. Please login first." }, { status: 401 });
+    }
 
     const { diaryId } = await request.json();
-    if (!diaryId) return NextResponse.json({ error: "Diary ID required" }, { status: 400 });
+    if (!diaryId) {
+      return NextResponse.json({ error: "Diary ID required" }, { status: 400 });
+    }
 
     // Ensure only the absolute creatorId can delete the resource container
     const diary = await prisma.diary.findFirst({
@@ -30,10 +29,12 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Only the creator can destroy this sanctuary." }, { status: 403 });
     }
 
+    // Erase the entire diary container (Cascades to drop associated requests/entries cleanly)
     await prisma.diary.delete({ where: { id: diaryId } });
 
-    return NextResponse.json({ message: "Sanctuary completely deleted." });
+    return NextResponse.json({ message: "Sanctuary completely deleted." }, { status: 200 });
   } catch (err) {
+    console.error("Diary volume erasure fault:", err);
     return NextResponse.json({ error: "Failed to erase diary container." }, { status: 500 });
   }
 }
