@@ -368,7 +368,7 @@ export default function Dashboard() {
               className="relative group overflow-hidden bg-white/10 hover:bg-rose-500/20 text-stone-200 hover:text-white border border-white/15 hover:border-rose-400/50 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-medium tracking-wide transition-all duration-300 shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
               <LogOut size={13} className="transition-transform group-hover:-translate-x-0.5" />
-              <span>Exit Space</span>
+              <span>Logout</span>
             </button>
           </div>
         </div>

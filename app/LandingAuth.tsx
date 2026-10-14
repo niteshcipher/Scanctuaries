@@ -255,8 +255,10 @@ export default function LandingAuth() {
       {/* ❄️ Smooth Falling Snow & Golden Bokeh Sparks */}
       <SnowfallEffect />
 
-      {/* 🌸 NAVIGATION BAR */}
-      <header className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-5 pb-3 sm:pt-7 sm:pb-4 flex items-center justify-between">
+      {/* 🌸 SCREEN 1: HERO & COZY JOURNAL DESK (Full Screen) */}
+      <div className="min-h-screen flex flex-col justify-between relative z-10 w-full">
+        {/* 🌸 NAVIGATION BAR */}
+        <header className="relative z-20 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pt-5 pb-3 sm:pt-7 sm:pb-4 flex items-center justify-between shrink-0">
         {/* Brand Logo */}
         <div 
           className="flex items-center gap-3 group cursor-pointer select-none" 
@@ -341,8 +343,8 @@ export default function LandingAuth() {
         </div>
       </header>
 
-      {/* 🌸 HERO SECTION */}
-      <section id="home" className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 pt-8 pb-16 md:pb-24 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-8">
+        {/* 🌸 HERO SECTION (Centered in Screen 1) */}
+        <section id="home" className="flex-1 flex flex-col lg:flex-row items-center justify-center w-full max-w-7xl mx-auto px-6 md:px-12 py-4 sm:py-6 gap-10 lg:gap-8">
         
         {/* Left Column: Whimsical Calligraphy & Poetic Invitation */}
         <motion.div
@@ -498,7 +500,7 @@ export default function LandingAuth() {
           <motion.div
             animate={{ rotate: [-3, -1, -3], y: [0, -4, 0] }}
             transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 0.5 }}
-            className="absolute -bottom-8 -left-4 md:-left-8 bg-[#FFF9E6] p-4 rounded-md shadow-[0_10px_30px_rgba(0,0,0,0.35)] border border-amber-300/80 z-20 max-w-[175px]"
+            className="absolute -bottom-3 md:-bottom-4 left-0 md:-left-6 bg-[#FFF9E6] p-3.5 rounded-md shadow-[0_10px_30px_rgba(0,0,0,0.35)] border border-amber-300/80 z-20 max-w-[170px]"
           >
             {/* Washi Tape */}
             <div className="washi-tape w-16 h-4 absolute -top-2 left-1/2 -translate-x-1/2 rotate-1" />
@@ -524,27 +526,28 @@ export default function LandingAuth() {
         </motion.div>
       </section>
 
-      {/* 📜 SMOOTH INFINITE MARQUEE POETIC RIBBON */}
-      <div className="relative w-full py-4 overflow-hidden border-y border-amber-400/20 bg-black/45 backdrop-blur-md z-10 my-4 shadow-inner">
-        <motion.div 
-          className="flex whitespace-nowrap gap-12 text-xs md:text-sm font-serif tracking-[0.25em] uppercase text-amber-200/85"
-          animate={{ x: ["0%", "-50%"] }}
-          transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
-        >
-          <span>✦ whispered memories ✦ encrypted thoughts ✦ peaceful mornings ✦ untouched by algorithms ✦ your quiet haven ✦ cozy midnight tea ✦ stories preserved forever ✦</span>
-          <span>✦ whispered memories ✦ encrypted thoughts ✦ peaceful mornings ✦ untouched by algorithms ✦ your quiet haven ✦ cozy midnight tea ✦ stories preserved forever ✦</span>
-        </motion.div>
+        {/* 📜 SMOOTH INFINITE MARQUEE POETIC RIBBON (Bottom of Screen 1) */}
+        <div className="relative w-full py-3 sm:py-3.5 overflow-hidden border-y border-amber-400/20 bg-black/45 backdrop-blur-md z-10 shadow-inner shrink-0">
+          <motion.div 
+            className="flex whitespace-nowrap gap-12 text-xs md:text-sm font-serif tracking-[0.25em] uppercase text-amber-200/85"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ repeat: Infinity, ease: "linear", duration: 30 }}
+          >
+            <span>✦ whispered memories ✦ encrypted thoughts ✦ peaceful mornings ✦ untouched by algorithms ✦ your quiet haven ✦ cozy midnight tea ✦ stories preserved forever ✦</span>
+            <span>✦ whispered memories ✦ encrypted thoughts ✦ peaceful mornings ✦ untouched by algorithms ✦ your quiet haven ✦ cozy midnight tea ✦ stories preserved forever ✦</span>
+          </motion.div>
+        </div>
       </div>
 
-      {/* 🌸 SECTION 1: THE CHAPTERS OF YOU (Features) */}
-      <section id="features" className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20">
+      {/* 🌸 SCREEN 2: THE CHAPTERS OF YOU (Features - Full Screen) */}
+      <section id="features" className="min-h-screen flex flex-col justify-center items-center relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-16">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.7 }}
-          className="text-center max-w-2xl mx-auto mb-16"
+          className="text-center max-w-2xl mx-auto mb-10 md:mb-14"
         >
           <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-amber-300 bg-amber-400/15 border border-amber-400/30 px-3.5 py-1 rounded-full mb-3 backdrop-blur-md">
             <Feather size={12} className="text-amber-400" />
@@ -633,8 +636,8 @@ export default function LandingAuth() {
         </div>
       </section>
 
-      {/* 🌸 SECTION 2: INTERACTIVE GLIMPSE OF THE JOURNAL (Scroll Preview) */}
-      <section id="preview" className="relative z-10 w-full max-w-5xl mx-auto px-6 py-20">
+      {/* 🌸 SCREEN 3: INTERACTIVE GLIMPSE OF THE JOURNAL (Scroll Preview - Full Screen) */}
+      <section id="preview" className="min-h-screen flex flex-col justify-center items-center relative z-10 w-full max-w-5xl mx-auto px-6 py-16">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
@@ -763,14 +766,14 @@ export default function LandingAuth() {
         </motion.div>
       </section>
 
-      {/* 🌸 SECTION 3: DAILY REFLECTIONS & QUOTES */}
-      <section id="notes" className="relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-20">
+      {/* 🌸 SCREEN 4: DAILY REFLECTIONS & QUOTES (Full Screen) */}
+      <section id="notes" className="min-h-screen flex flex-col justify-center items-center relative z-10 w-full max-w-7xl mx-auto px-6 md:px-12 py-16">
         <motion.div
           initial={{ opacity: 0, y: 25 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-14"
+          className="text-center mb-10 md:mb-12"
         >
           <span className="text-xs font-mono uppercase tracking-widest text-amber-300 bg-amber-400/15 px-3 py-1 rounded-full border border-amber-400/30">
             notes on parchment
@@ -780,7 +783,7 @@ export default function LandingAuth() {
           </h2>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
           <motion.div
             whileHover={{ y: -6, scale: 1.02 }}
             className="bg-gradient-to-b from-[#1C1715]/85 to-[#120F0E]/95 border border-amber-500/25 hover:border-amber-400/60 p-6 rounded-2xl shadow-lg hover:shadow-[0_12px_35px_rgba(245,158,11,0.18)] transition-all group"
@@ -816,9 +819,9 @@ export default function LandingAuth() {
         </div>
       </section>
 
-      {/* 🌸 SECTION 4: CALL TO SANCTUARY & FOOTER */}
-      <section id="about" className="relative z-10 w-full mt-16 pt-16 pb-20 bg-gradient-to-b from-transparent via-[#0F0D0C]/85 to-[#0F0D0C] border-t border-amber-500/20">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+      {/* 🌸 SCREEN 5: CALL TO SANCTUARY & FOOTER (Full Screen) */}
+      <section id="about" className="min-h-screen flex flex-col justify-between items-center relative z-10 w-full pt-16 md:pt-20 pb-8 bg-gradient-to-b from-transparent via-[#0F0D0C]/85 to-[#0F0D0C] border-t border-amber-500/20">
+        <div className="flex-1 flex flex-col justify-center items-center max-w-4xl mx-auto px-6 text-center w-full">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -845,9 +848,10 @@ export default function LandingAuth() {
               <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
             </motion.button>
           </motion.div>
+        </div>
 
-          {/* Footer Info */}
-          <div className="mt-20 pt-8 border-t border-amber-500/15 flex flex-col sm:flex-row items-center justify-between text-xs text-amber-200/60 font-serif gap-4">
+        {/* Footer Info */}
+        <div className="w-full max-w-4xl mx-auto px-6 pt-6 border-t border-amber-500/15 flex flex-col sm:flex-row items-center justify-between text-xs text-amber-200/60 font-serif gap-4 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-amber-300 font-medium">Volume Sanctuary</span>
               <span>· A tranquil journal for meaningful memories</span>
@@ -876,8 +880,7 @@ export default function LandingAuth() {
               </button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* 🌸 AUTHENTICATION MODAL */}
       <AnimatePresence>
