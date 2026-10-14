@@ -51,11 +51,9 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-// 1. Pick the correct connection string based on the environment
 const isDev = process.env.NODE_ENV === "development";
-const connectionString = isDev 
-  ? (process.env.DIRECT_URL ?? process.env.DATABASE_URL)
-  : (process.env.DATABASE_URL ?? process.env.DIRECT_URL);
+// 1. Pick the correct connection string (prioritize pooler DATABASE_URL to avoid IPv6 timeout locally)
+const connectionString = process.env.DATABASE_URL ?? process.env.DIRECT_URL;
 
 if (!connectionString) {
   throw new Error("Neither DATABASE_URL nor DIRECT_URL is set for the Prisma runtime environment.");

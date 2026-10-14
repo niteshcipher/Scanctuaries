@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
 @theme {
-  /* High-Contrast Aesthetic Organic Palette */
-  --color-diary-cream: #F5F2EB;    /* Deepened cream canvas background for better definition */
-  --color-diary-paper: #FFFFFF;    /* Pure crisp white card paper for maximum contrast */
-  --color-diary-sage: #5F7259;     /* Deepened rich Sage Green (highly visible text/borders) */
-  --color-diary-blush: #D4A3A7;    /* Elegant, defined rose accent blush */
-  --color-diary-charcoal: #1F2421; /* Rich off-black char-slate for deep reading contrast */
+  /* Whimsical Journal Watercolor Palette */
+  --color-diary-cream: #FAF7F2;
+  --color-diary-warm-bg: #FDFBF7;
+  --color-diary-paper: #FFFFFF;
+  --color-diary-peach: #F6C8BE;
+  --color-diary-blush: #E8A598;
+  --color-diary-rose: #D98274;
+  --color-diary-sage: #6B7F67;
+  --color-diary-charcoal: #3D342F;
+  --color-diary-sepia: #7B6D65;
 
-  --font-serif: "Playfair Display", "Merriweather", serif;
+  --font-serif: var(--font-serif), "Playfair Display", Georgia, serif;
+  --font-handwriting: var(--font-handwriting), "Caveat", cursive;
+  --font-sans: var(--font-sans), "Plus Jakarta Sans", sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
 
 .notebook-lines {
   line-height: 2rem;
-  background-image: linear-gradient(transparent 95%, var(--color-diary-charcoal) 5%);
+  background-image: linear-gradient(transparent 95%, rgba(61, 52, 47, 0.08) 5%);
   background-size: 100% 2rem;
   background-attachment: local;
 }
 
+.washi-tape {
+  background: rgba(232, 165, 152, 0.45);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(2px);
+}
+
+.paper-torn {
+  clip-path: polygon(
+    0% 0%, 5% 2%, 10% 0%, 15% 3%, 20% 1%, 25% 3%, 30% 0%, 35% 2%, 40% 1%, 45% 3%, 
+    50% 0%, 55% 2%, 60% 1%, 65% 3%, 70% 0%, 75% 2%, 80% 1%, 85% 3%, 90% 0%, 95% 2%, 100% 0%, 
+    100% 100%, 0% 100%
+  );
+}
+
 body {
-  background-color: var(--color-diary-cream);
-  color: var(--color-diary-charcoal);
+  background-color: #0C0A09;
+  color: #FAF7F2;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Sleek parchment custom scrollbar for diary pages */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 130, 95, 0.35) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(180, 130, 95, 0.35);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 130, 95, 0.6);
 }

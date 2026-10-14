@@ -1,8 +1,27 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, BookOpen, Lock, ShieldAlert, Feather, ChevronLeft, ChevronRight, Calendar, User, Search, Edit3, Check, X, FileText, ImageIcon, Image as LucideImage, PenTool, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef, use } from "react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import {
+  ArrowLeft,
+  BookOpen,
+  Lock,
+  ShieldAlert,
+  Feather,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  User,
+  Search,
+  Edit3,
+  Check,
+  X,
+  FileText,
+  ImageIcon,
+  Image as LucideImage,
+  PenTool,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Entry {
@@ -18,7 +37,131 @@ interface Entry {
   author: { name: string };
 }
 
-export default function DynamicBookWorkspace({ params }: { params: Promise<{ diaryId: string }> }) {
+/**
+ * ❄️ Serene Falling Snow & Golden Bokeh Sparks Canvas for Diary Page
+ */
+function DiarySnowfall() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", handleResize);
+
+    const flakeCount = 38;
+    const flakes = Array.from({ length: flakeCount }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: Math.random() * 2 + 0.8,
+      d: Math.random() * flakeCount,
+      speedY: Math.random() * 0.45 + 0.2,
+      speedX: Math.random() * 0.25 - 0.12,
+      opacity: Math.random() * 0.5 + 0.15,
+      isGolden: Math.random() > 0.65,
+    }));
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+
+      for (let i = 0; i < flakeCount; i++) {
+        const f = flakes[i];
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, false);
+        if (f.isGolden) {
+          ctx.fillStyle = `rgba(253, 224, 71, ${f.opacity * 0.8})`;
+          ctx.shadowColor = "rgba(245, 158, 11, 0.6)";
+          ctx.shadowBlur = 6;
+        } else {
+          ctx.fillStyle = `rgba(255, 255, 255, ${f.opacity * 0.6})`;
+          ctx.shadowColor = "rgba(255, 255, 255, 0.3)";
+          ctx.shadowBlur = 3;
+        }
+        ctx.fill();
+
+        f.y += f.speedY;
+        f.x += Math.sin(f.d) * 0.3 + f.speedX;
+        f.d += 0.012;
+
+        if (f.y > height + 10) {
+          f.y = -10;
+          f.x = Math.random() * width;
+        }
+        if (f.x > width + 10) f.x = -10;
+        if (f.x < -10) f.x = width + 10;
+      }
+
+      animationId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 z-1 pointer-events-none"
+      style={{ opacity: 0.75 }}
+    />
+  );
+}
+
+/**
+ * 📖 Authentic 3D Book Page Flip Animation Variants
+ */
+const pageFlipVariants: Variants = {
+  enter: (direction: number) => ({
+    rotateY: direction > 0 ? 55 : -55,
+    x: direction > 0 ? 40 : -40,
+    opacity: 0,
+    transformOrigin: direction > 0 ? "0% 50%" : "100% 50%",
+    filter: "brightness(0.92)",
+  }),
+  center: {
+    rotateY: 0,
+    x: 0,
+    opacity: 1,
+    transformOrigin: "50% 50%",
+    filter: "brightness(1)",
+    transition: {
+      duration: 0.38,
+      ease: [0.25, 1, 0.5, 1] as [number, number, number, number],
+    },
+  },
+  exit: (direction: number) => ({
+    rotateY: direction > 0 ? -55 : 55,
+    x: direction > 0 ? -40 : 40,
+    opacity: 0,
+    transformOrigin: direction > 0 ? "100% 50%" : "0% 50%",
+    filter: "brightness(0.88)",
+    transition: {
+      duration: 0.32,
+      ease: [0.25, 1, 0.5, 1] as [number, number, number, number],
+    },
+  }),
+};
+
+export default function DynamicBookWorkspace({
+  params,
+}: {
+  params: Promise<{ diaryId: string }>;
+}) {
   const router = useRouter();
   const resolvedParams = use(params);
   const diaryId = resolvedParams.diaryId;
@@ -28,13 +171,28 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
   const [currentUserId, setCurrentUserId] = useState<string>("none");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageDirection, setPageDirection] = useState<number>(0);
 
-  // Mobile View Mode Layout Selector
-  const [mobileActiveTab, setMobileActiveTab] = useState<"write" | "read">("write");
+  // Mobile View Mode Layout Selector ("write" vs "read")
+  const [mobileActiveTab, setMobileActiveTab] = useState<"write" | "read">("read");
 
   // Search & Navigation tracking states
   const [searchQuery, setSearchQuery] = useState("");
   const [jumpPageStr, setJumpPageStr] = useState("");
+
+  const goToNextPage = () => {
+    if (currentPage < filteredEntries.length - 1 && !isEditing) {
+      setPageDirection(1);
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 0 && !isEditing) {
+      setPageDirection(-1);
+      setCurrentPage((prev) => Math.max(0, prev - 1));
+    }
+  };
 
   // Inline Edit management panel tracking states
   const [isEditing, setIsEditing] = useState(false);
@@ -43,7 +201,7 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editError, setEditError] = useState("");
 
-  // Deletion tracking state unified cleanly
+  // Deletion tracking state
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   // Form write state elements
@@ -58,17 +216,15 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
 
   const fetchEntries = async () => {
     try {
-      // ✅ FIXED: Added credentials configuration to pass Auth.js cookies safely
       const res = await fetch(`/api/entries?diaryId=${diaryId}`, {
         method: "GET",
         credentials: "same-origin",
       });
-      
+
       if (!res.ok) throw new Error("Could not parse repository content.");
       const data = await res.json();
       setEntries(data.entries || []);
 
-      // ✅ FIXED: Relying on backend session data payload instead of outdated manual client-side JWT token parsing
       if (data.currentUserId) {
         setCurrentUserId(data.currentUserId);
       }
@@ -88,70 +244,78 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
     setFormError("");
     setWriting(true);
     try {
-      // ✅ FIXED: Appended credentials framework parameters to execution mapping
       const res = await fetch("/api/entries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ 
-          diaryId, 
-          title, 
-          content, 
+        body: JSON.stringify({
+          diaryId,
+          title,
+          content,
           imageUrl: imageUrl.trim() || null,
-          isCapsule, 
-          unlockDate: isCapsule ? unlockDate : null 
+          isCapsule,
+          unlockDate: isCapsule ? unlockDate : null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Submission failure");
 
-      setTitle(""); setContent(""); setImageUrl(""); setShowImageInput(false); setIsCapsule(false); setUnlockDate("");
+      setTitle("");
+      setContent("");
+      setImageUrl("");
+      setShowImageInput(false);
+      setIsCapsule(false);
+      setUnlockDate("");
       await fetchEntries();
-      currentPage === 0 ? fetchEntries() : setCurrentPage(0); // Safely reset to page one
+      setCurrentPage(0);
       setMobileActiveTab("read");
-    } catch (err: any) { setFormError(err.message); } finally { setWriting(false); }
+    } catch (err: any) {
+      setFormError(err.message);
+    } finally {
+      setWriting(false);
+    }
   };
 
   const handleSaveChangesEdit = async () => {
     if (!currentActiveEntry) return;
     setEditError("");
     try {
-      // ✅ FIXED: Appended credentials framework parameters to update mapping
       const res = await fetch("/api/entries", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ 
-          entryId: currentActiveEntry.id, 
-          title: editTitle, 
+        body: JSON.stringify({
+          entryId: currentActiveEntry.id,
+          title: editTitle,
           content: editContent,
-          imageUrl: editImageUrl.trim() || null
-        })
+          imageUrl: editImageUrl.trim() || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Update structural fault.");
 
       setIsEditing(false);
       await fetchEntries();
-    } catch (err: any) { setEditError(err.message); }
+    } catch (err: any) {
+      setEditError(err.message);
+    }
   };
 
   const handleDeleteEntry = async () => {
     if (!currentActiveEntry) return;
     try {
-      // ✅ FIXED: Appended credentials framework parameters to deletion mapping
       const res = await fetch(`/api/entries`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ entryId: currentActiveEntry.id })
+        body: JSON.stringify({ entryId: currentActiveEntry.id }),
       });
-      
+
       if (!res.ok) throw new Error("Could not erase specified sheet mapping.");
-      
+
       setIsConfirmingDelete(false);
       if (currentPage > 0 && currentPage === filteredEntries.length - 1) {
-        setCurrentPage(prev => prev - 1);
+        setCurrentPage((prev) => prev - 1);
       }
       await fetchEntries();
     } catch (err) {
@@ -167,9 +331,10 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
     setIsEditing(true);
   };
 
-  const filteredEntries = entries.filter(entry => 
-    entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    entry.content.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredEntries = entries.filter(
+    (entry) =>
+      entry.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entry.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const totalBookPages = Math.max(1, filteredEntries.length);
@@ -179,118 +344,265 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
     e.preventDefault();
     const targetPageNum = parseInt(jumpPageStr, 10);
     if (!isNaN(targetPageNum) && targetPageNum >= 1 && targetPageNum <= totalBookPages) {
+      setPageDirection(targetPageNum - 1 > currentPage ? 1 : -1);
       setCurrentPage(targetPageNum - 1);
       setJumpPageStr("");
     }
   };
 
   return (
-    <main className="min-h-screen w-full bg-diary-cream p-3 sm:p-6 md:p-8 text-diary-charcoal flex flex-col justify-between gap-6 relative font-serif antialiased overflow-x-hidden selection:bg-diary-blush/30">
-      
-      <div className="absolute inset-4 md:inset-6 border border-diary-charcoal/5 pointer-events-none rounded-sm z-0" />
+    <div className="relative min-h-screen text-[#FAF7F2] font-sans selection:bg-amber-400/40 overflow-x-hidden flex flex-col justify-between">
+      {/* ❄️ Full-bleed Snowy Winter Street Background */}
+      <div
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-700 pointer-events-none scale-105 opacity-85"
+        style={{
+          backgroundImage: `url('/landing-bg.jpg')`,
+        }}
+      />
 
-      {/* Top Header Panel */}
-      <header className="max-w-6xl w-full mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 relative z-10">
-        <button 
-          onClick={() => router.push("/dashboard")}
-          className="text-diary-charcoal/60 hover:text-diary-sage transition flex items-center space-x-2 text-xs uppercase tracking-widest font-sans font-bold cursor-pointer self-start sm:self-center"
-        >
-          <ArrowLeft size={14} /> <span>Dashboard Hub</span>
-        </button>
+      {/* 🌌 Luminous Twilight Overlay with Deep Contrast */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          background: `
+            linear-gradient(135deg, 
+              rgba(14, 11, 10, 0.85) 0%, 
+              rgba(22, 17, 14, 0.70) 45%, 
+              rgba(14, 11, 10, 0.82) 80%, 
+              rgba(9, 7, 7, 0.92) 100%
+            )
+          `,
+          backdropFilter: "blur(1px)",
+        }}
+      />
 
-        <div className="flex lg:hidden bg-linear-to-b from-[#8C6D58]/10 to-[#594235]/10 p-1 rounded-xl border border-diary-charcoal/5 font-sans w-full sm:w-auto">
-          <button
-            onClick={() => setMobileActiveTab("write")}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${mobileActiveTab === "write" ? "bg-diary-sage text-white shadow-xs" : "text-diary-charcoal/60 hover:text-diary-sage"}`}
-          >
-            <PenTool size={14} /> Inscribe Page
-          </button>
-          <button
-            onClick={() => setMobileActiveTab("read")}
-            className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition duration-200 cursor-pointer ${mobileActiveTab === "read" ? "bg-diary-sage text-white shadow-xs" : "text-diary-charcoal/60 hover:text-diary-sage"}`}
-          >
-            <BookOpen size={14} /> Read Ledger
-          </button>
-        </div>
+      {/* 🏮 Ambient Streetlight Radial Glows */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[8%] left-[25%] w-[550px] h-[550px] rounded-full bg-amber-500/16 blur-[130px] mix-blend-screen animate-pulse duration-1000" />
+        <div className="absolute bottom-[15%] right-[20%] w-[580px] h-[480px] rounded-full bg-orange-600/12 blur-[150px] mix-blend-screen" />
+      </div>
 
-        <div className="relative w-full sm:w-64 self-start sm:self-center font-sans">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-diary-charcoal/30" />
-          <input 
-            type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(0); }}
-            placeholder="Search words or titles..."
-            className="w-full bg-[#FDF7F2] border border-diary-charcoal/10 rounded-xl pl-9 pr-4 py-1.5 text-xs focus:outline-none focus:border-diary-sage text-diary-charcoal shadow-2xs transition"
-          />
+      {/* Subtle organic paper grain texture overlay */}
+      <div
+        className="fixed inset-0 z-0 opacity-12 pointer-events-none mix-blend-overlay"
+        style={{
+          backgroundImage: `radial-gradient(#ffffff 0.75px, transparent 0.75px)`,
+          backgroundSize: "24px 24px",
+        }}
+      />
+
+      {/* ❄️ Serene Falling Snow & Bokeh Particles */}
+      <DiarySnowfall />
+
+      {/* 🌸 STICKY TOP BRAND BAR */}
+      <header className="sticky top-0 z-30 w-full backdrop-blur-xl bg-black/60 border-b border-amber-500/20 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        <div className="max-w-6xl w-full mx-auto px-3 sm:px-6 py-2.5 sm:py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+          
+          {/* Top Row: Back Button + Tablet/Desktop Tab Switcher */}
+          <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="text-stone-300 hover:text-white transition flex items-center gap-1.5 text-xs font-serif font-medium cursor-pointer bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full border border-white/10 active:scale-95 shrink-0"
+            >
+              <ArrowLeft size={13} className="text-amber-400" />
+              <span>Sanctuary Bookshelf</span>
+            </button>
+
+            {/* Mobile Mode Switcher for Tablet screens (sm to lg) */}
+            <div className="hidden sm:flex lg:hidden bg-black/60 p-1 rounded-full border border-amber-500/30 text-xs font-serif shrink-0">
+              <button
+                onClick={() => setMobileActiveTab("write")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition cursor-pointer ${
+                  mobileActiveTab === "write"
+                    ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs"
+                    : "text-amber-200/60 hover:text-white"
+                }`}
+              >
+                <PenTool size={11} />
+                <span>Inscribe</span>
+              </button>
+              <button
+                onClick={() => setMobileActiveTab("read")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-medium transition cursor-pointer ${
+                  mobileActiveTab === "read"
+                    ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs"
+                    : "text-amber-200/60 hover:text-white"
+                }`}
+              >
+                <BookOpen size={11} />
+                <span>Read ({filteredEntries.length})</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Full-width segmented Tab switcher on Mobile phones (< 640px) */}
+          <div className="flex sm:hidden w-full bg-black/60 p-1 rounded-full border border-amber-500/30 text-xs font-serif">
+            <button
+              onClick={() => setMobileActiveTab("write")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full font-medium transition cursor-pointer ${
+                mobileActiveTab === "write"
+                  ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs"
+                  : "text-amber-200/60 hover:text-white"
+              }`}
+            >
+              <PenTool size={12} />
+              <span>Inscribe Page</span>
+            </button>
+            <button
+              onClick={() => setMobileActiveTab("read")}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-full font-medium transition cursor-pointer ${
+                mobileActiveTab === "read"
+                  ? "bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs"
+                  : "text-amber-200/60 hover:text-white"
+              }`}
+            >
+              <BookOpen size={12} />
+              <span>Read Leaves ({filteredEntries.length})</span>
+            </button>
+          </div>
+
+          {/* Search Box */}
+          <div className="relative w-full sm:w-56 md:w-64 font-sans">
+            <Search
+              size={13}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-300/50"
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(0);
+              }}
+              placeholder="Search written memories..."
+              className="w-full bg-black/40 border border-amber-500/25 rounded-full pl-8 pr-4 py-1.5 text-xs text-white placeholder:text-stone-500 focus:outline-hidden focus:border-amber-400 transition"
+            />
+          </div>
         </div>
       </header>
 
-      {/* LEATHER COVER WRAPPING */}
-      <section className="max-w-6xl w-full mx-auto relative p-1.5 sm:p-3 bg-linear-to-b from-[#8C6D58] via-[#735643] to-[#594235] rounded-2xl sm:rounded-3xl shadow-[0_25px_60px_rgba(115,86,67,0.18)] z-10 border border-[#594235]/40">
+      {/* 📖 FIXED-SIZE LEATHER SANCTUARY BOOK WITH SCROLLABLE PAGES */}
+      <main className="relative z-10 max-w-6xl w-full mx-auto px-2 sm:px-6 py-3 sm:py-6 flex-1 flex flex-col justify-center">
         
-        <div className="absolute left-0 top-0 bottom-0 w-3 bg-linear-to-r from-black/15 to-transparent rounded-l-2xl pointer-events-none z-30" />
-        <div className="absolute right-0 top-0 bottom-0 w-3 bg-linear-to-l from-black/15 to-transparent rounded-r-2xl pointer-events-none z-30" />
-
-        <div className="bg-[#FDF7F2] rounded-xl sm:rounded-2xl overflow-hidden min-h-130 lg:min-h-155 relative shadow-inner">
+        {/* Leather Hardcover Wrapper */}
+        <section className="w-full relative p-1.5 sm:p-3.5 bg-gradient-to-b from-[#2E221B] via-[#221813] to-[#160E0A] rounded-2xl sm:rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.85),0_0_50px_rgba(245,158,11,0.12)] border border-amber-600/35">
           
-          <div className="absolute left-0 top-0 bottom-0 w-6 sm:w-10 bg-linear-to-r from-diary-charcoal/4 to-transparent pointer-events-none z-20" />
-          <div className="absolute right-0 top-0 bottom-0 w-6 sm:w-10 bg-linear-to-l from-diary-charcoal/4 to-transparent pointer-events-none z-20" />
-          
-          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 bg-linear-to-r from-transparent via-black/10 to-transparent pointer-events-none z-30" />
-          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 -translate-x-1/2 bg-diary-charcoal/5 z-20" />
+          {/* Subtle Outer Leather Edge Sheens */}
+          <div className="absolute left-0 top-0 bottom-0 w-3 bg-gradient-to-r from-black/25 to-transparent rounded-l-2xl pointer-events-none z-30" />
+          <div className="absolute right-0 top-0 bottom-0 w-3 bg-gradient-to-l from-black/25 to-transparent rounded-r-2xl pointer-events-none z-30" />
 
-          <div className="flex flex-col lg:grid lg:grid-cols-2 w-full h-full">
+          {/* Inner Fixed-Height Parchment Spread */}
+          <div className="bg-gradient-to-b from-[#FFFDF9] via-[#FAF6EE] to-[#F5ECE0] text-[#3D342F] rounded-xl sm:rounded-2xl overflow-hidden relative shadow-inner h-[calc(100dvh-200px)] min-h-[460px] max-h-[720px] flex flex-col">
+            
+            {/* Spine Depth Gradients */}
+            <div className="absolute left-0 top-0 bottom-0 w-4 sm:w-8 bg-gradient-to-r from-stone-900/10 to-transparent pointer-events-none z-20" />
+            <div className="absolute right-0 top-0 bottom-0 w-4 sm:w-8 bg-gradient-to-l from-stone-900/10 to-transparent pointer-events-none z-20" />
+            
+            {/* Center Spine Divider on Desktop */}
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-8 -translate-x-1/2 bg-gradient-to-r from-transparent via-stone-900/12 to-transparent pointer-events-none z-30" />
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-stone-900/15 z-20" />
 
-            {/* LEFT SIDE: Inscription Slate */}
-            <div className={`p-5 sm:p-8 md:p-10 flex-col justify-between border-b lg:border-b-0 lg:border-r border-diary-charcoal/5 relative z-10 ${mobileActiveTab === "write" ? "flex" : "hidden lg:flex"}`}>
-              <div className="space-y-6 w-full">
-                <div className="flex items-center space-x-2.5 text-diary-sage"> 
-                  <Feather size={20} strokeWidth={1.5} /> 
-                  <h2 className="font-serif text-lg tracking-wide font-semibold text-diary-charcoal">Inscribe New Memory Page</h2> 
+            {/* Book Pages Container (Desktop: 2 columns; Mobile: 1 column switched via tabs) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 w-full h-full divide-y lg:divide-y-0 lg:divide-x divide-stone-300/40">
+
+              {/* 🖋️ LEFT PAGE: Inscription Slate (Scrollable Form Content) */}
+              <div
+                className={`p-4 sm:p-7 md:p-8 flex-col justify-between h-full relative z-10 overflow-hidden ${
+                  mobileActiveTab === "write" ? "flex" : "hidden lg:flex"
+                }`}
+              >
+                {/* Fixed Top Page Heading */}
+                <div className="flex items-center space-x-2 text-amber-800 pb-3 border-b border-stone-300/50 shrink-0">
+                  <Feather size={18} className="text-amber-700" />
+                  <h2 className="font-serif text-base sm:text-lg font-semibold tracking-wide text-[#3D342F]">
+                    Inscribe New Memory Page
+                  </h2>
                 </div>
 
-                <form onSubmit={handleWriteEntry} className="space-y-4">
-                  {formError && <p className="text-xs font-sans text-red-700 bg-red-50 p-3 rounded-xl border border-red-200">{formError}</p>}
-                  
-                  <div className="space-y-1.5">
-                    <label htmlFor="entry-title" className="text-[10px] font-sans font-bold tracking-widest text-diary-charcoal/40 uppercase">Header Title</label>
-                    <input id="entry-title" type="text" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title of this moment..." className="w-full bg-transparent text-diary-charcoal font-serif text-lg border-b border-diary-charcoal/10 focus:outline-none focus:border-diary-sage pb-2 transition placeholder:text-diary-charcoal/20" />
-                  </div>
-                  
-                  <div className="space-y-1.5">
-                    <label htmlFor="entry-content" className="text-[10px] font-sans font-bold tracking-widest text-diary-charcoal/40 uppercase">Body Thoughts</label>
-                    <textarea 
-                      id="entry-content" 
-                      required 
-                      rows={6} 
-                      value={content} 
-                      onChange={(e) => setContent(e.target.value)} 
-                      placeholder="Pour your thoughts down across the pages..." 
-                      className="w-full bg-transparent text-sm text-diary-charcoal/80 focus:outline-none resize-none pt-1 border-none notebook-lines opacity-85 placeholder:text-diary-charcoal/20"
+                {/* Scrollable Form Body */}
+                <form
+                  onSubmit={handleWriteEntry}
+                  className="flex-1 overflow-y-auto py-3 pr-1 sm:pr-2 space-y-3.5 custom-scrollbar"
+                >
+                  {formError && (
+                    <p className="text-xs font-serif text-rose-800 bg-rose-50 p-2.5 rounded-xl border border-rose-200">
+                      {formError}
+                    </p>
+                  )}
+
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="entry-title"
+                      className="text-[10px] font-sans font-bold tracking-widest text-[#7B6D65] uppercase"
+                    >
+                      Title of Memory
+                    </label>
+                    <input
+                      id="entry-title"
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. First frost on the windowpane..."
+                      className="w-full bg-transparent text-[#3D342F] font-serif text-base sm:text-lg border-b border-stone-300 focus:outline-hidden focus:border-amber-600 pb-1.5 transition placeholder:text-stone-400"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1">
+                    <label
+                      htmlFor="entry-content"
+                      className="text-[10px] font-sans font-bold tracking-widest text-[#7B6D65] uppercase"
+                    >
+                      Reflections &amp; Thoughts
+                    </label>
+                    <textarea
+                      id="entry-content"
+                      required
+                      rows={5}
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Pour your thoughts down across the pages..."
+                      className="w-full bg-transparent text-sm text-[#3D342F] focus:outline-hidden resize-none pt-1 border-none notebook-lines opacity-90 placeholder:text-stone-400 min-h-[120px]"
+                    />
+                  </div>
+
+                  {/* Photographic Memory Attachment */}
+                  <div className="space-y-2 pt-1">
                     <button
                       type="button"
                       onClick={() => setShowImageInput(!showImageInput)}
-                      className="inline-flex items-center gap-1.5 text-xs text-diary-charcoal/50 hover:text-diary-sage transition font-sans font-semibold cursor-pointer select-none"
+                      className="inline-flex items-center gap-1.5 text-xs text-[#7B6D65] hover:text-amber-800 transition font-sans font-medium cursor-pointer select-none"
                     >
-                      <ImageIcon size={14} /> {showImageInput ? "Remove Image Layer" : "Attach Photographic Memory"}
+                      <ImageIcon size={14} className="text-amber-700" />
+                      <span>{showImageInput ? "Remove Photo Link" : "Attach Photo Address"}</span>
                     </button>
-                    
+
                     <AnimatePresence>
                       {showImageInput && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-2 overflow-hidden pl-1">
-                          <input 
-                            type="url" 
-                            value={imageUrl} 
-                            onChange={(e) => setImageUrl(e.target.value)} 
-                            placeholder="Paste photo web link address..." 
-                            className="w-full bg-[#FDF7F2] border border-diary-charcoal/10 rounded-xl px-3 py-2 font-sans text-xs focus:outline-none focus:border-diary-sage text-diary-charcoal shadow-2xs"
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="space-y-2 overflow-hidden pl-1"
+                        >
+                          <input
+                            type="url"
+                            value={imageUrl}
+                            onChange={(e) => setImageUrl(e.target.value)}
+                            placeholder="https://example.com/photo.jpg"
+                            className="w-full bg-white/70 border border-stone-300 rounded-xl px-3 py-2 font-sans text-xs focus:outline-hidden focus:border-amber-600 text-[#3D342F]"
                           />
                           {imageUrl.trim() && (
-                            <div className="w-24 h-16 rounded-lg overflow-hidden border border-diary-charcoal/10 bg-[#FDF7F2] relative shadow-2xs">
+                            <div className="w-24 h-16 rounded-lg overflow-hidden border border-stone-300 bg-stone-100 relative shadow-xs">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={imageUrl} alt="Attached Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = "none"; }} />
+                              <img
+                                src={imageUrl}
+                                alt="Preview"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = "none";
+                                }}
+                              />
                             </div>
                           )}
                         </motion.div>
@@ -298,201 +610,379 @@ export default function DynamicBookWorkspace({ params }: { params: Promise<{ dia
                     </AnimatePresence>
                   </div>
 
-                  <div className="pt-1 space-y-3">
-                    <label className="flex items-center space-x-3 text-xs tracking-wider text-diary-charcoal/50 font-sans font-bold uppercase cursor-pointer select-none group">
-                      <input type="checkbox" checked={isCapsule} onChange={(e) => setIsCapsule(e.target.checked)} className="rounded border-diary-charcoal/20 text-diary-sage focus:ring-0 cursor-pointer w-4 h-4 accent-diary-sage" />
-                      <span className="group-hover:text-diary-sage transition">Seal into Dynamic Time Capsule</span>
+                  {/* Time Capsule Lock Option */}
+                  <div className="pt-1 space-y-2">
+                    <label className="flex items-center space-x-2 text-xs text-[#7B6D65] font-sans font-medium cursor-pointer select-none group">
+                      <input
+                        type="checkbox"
+                        checked={isCapsule}
+                        onChange={(e) => setIsCapsule(e.target.checked)}
+                        className="rounded border-stone-300 text-amber-700 focus:ring-0 cursor-pointer w-4 h-4 accent-amber-600"
+                      />
+                      <span className="group-hover:text-amber-900 transition">
+                        Seal into Time Capsule
+                      </span>
                     </label>
-                    
+
                     <AnimatePresence>
                       {isCapsule && (
-                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="pl-7 overflow-hidden">
-                          <label htmlFor="unlock-date" className="block text-[10px] font-sans uppercase text-diary-charcoal/40 font-bold mb-1.5">Target Unlock Date</label>
-                          <input id="unlock-date" type="date" required={isCapsule} value={unlockDate} onChange={(e) => setUnlockDate(e.target.value)} className="bg-diary-cream border border-diary-charcoal/10 rounded-xl px-3 py-2 font-sans text-xs focus:outline-none text-diary-charcoal/80 font-medium shadow-2xs" />
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="pl-6 overflow-hidden"
+                        >
+                          <label
+                            htmlFor="unlock-date"
+                            className="block text-[10px] font-sans uppercase text-[#7B6D65] font-bold mb-1"
+                          >
+                            Unlocks on Date
+                          </label>
+                          <input
+                            id="unlock-date"
+                            type="date"
+                            required={isCapsule}
+                            value={unlockDate}
+                            onChange={(e) => setUnlockDate(e.target.value)}
+                            className="bg-white/80 border border-stone-300 rounded-xl px-3 py-1.5 font-sans text-xs focus:outline-hidden text-[#3D342F]"
+                          />
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
 
-                  <button type="submit" disabled={writing} className="w-full bg-diary-sage hover:bg-diary-sage/90 text-white font-sans font-bold text-xs uppercase tracking-widest py-3.5 rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 mt-2">
+                  {/* Inscribe Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={writing}
+                    className="w-full bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-serif font-semibold text-xs uppercase tracking-widest py-3 rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 mt-2 active:scale-98"
+                  >
                     {writing ? "Securing Memory..." : "Press Ink into Page"}
                   </button>
                 </form>
-              </div>
-              <div className="pt-6 border-t border-diary-charcoal/5 text-[11px] font-sans text-diary-charcoal/40 flex items-center justify-between italic mt-6 lg:mt-0"> <span>* Custom encryption enabled.</span> <span>Left Page</span> </div>
-            </div>
 
-            {/* RIGHT SIDE: Dynamic Sheet Ledger */}
-            <div className={`p-5 sm:p-8 md:p-10 flex flex-col justify-between w-full h-full relative z-10 ${mobileActiveTab === "read" ? "flex" : "hidden lg:flex"}`}>
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <div className="h-full min-h-62.5 flex items-center justify-center font-serif italic text-diary-charcoal/40">Leafing through notebook logs...</div>
-                ) : filteredEntries.length === 0 ? (
-                  <div className="h-full min-h-62.5 flex flex-col items-center justify-center text-center p-4">
-                    <FileText size={28} className="text-diary-charcoal/15 mb-3" strokeWidth={1.5} />
-                    <h4 className="font-serif text-base text-diary-charcoal/80 font-semibold mb-1">No Memories Found</h4>
-                    <p className="text-xs font-sans text-diary-charcoal/40 max-w-xs italic leading-relaxed">No matching entries line up with your active parameters.</p>
-                  </div>
-                ) : (
-                  <motion.div key={currentPage} initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.25 }} className="h-full flex flex-col justify-between space-y-6 w-full">
-                    
-                    <div className="flex flex-col sm:flex-row justify-between items-start gap-3 border-b border-diary-charcoal/5 pb-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-[10px] font-sans text-diary-charcoal/50 uppercase font-bold tracking-widest">
-                          <Calendar size={12} className="text-diary-sage" />
-                          <span>{new Date(currentActiveEntry.createdAt).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                {/* Left Page Leaf Footer Note */}
+                <div className="pt-2.5 border-t border-stone-300/40 text-[10px] font-mono text-[#7B6D65] flex items-center justify-between shrink-0">
+                  <span>✦ encrypted volume</span>
+                  <span>Left Page</span>
+                </div>
+              </div>
+
+              {/* 📖 RIGHT PAGE: Dynamic Sheet Ledger (Scrollable Reader / Editor with 3D Page Flip & Slide Gestures) */}
+              <div
+                className={`p-4 sm:p-7 md:p-8 flex-col justify-between h-full relative z-10 overflow-hidden ${
+                  mobileActiveTab === "read" ? "flex" : "hidden lg:flex"
+                }`}
+                style={{ perspective: 1200 }}
+              >
+                <AnimatePresence mode="wait" custom={pageDirection}>
+                  {loading ? (
+                    <div className="h-full flex items-center justify-center font-serif italic text-stone-400">
+                      Leafing through volume pages...
+                    </div>
+                  ) : filteredEntries.length === 0 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                      <FileText size={30} className="text-stone-300 mb-3" strokeWidth={1.5} />
+                      <h4 className="font-serif text-lg text-[#3D342F] font-semibold mb-1">
+                        No Memories Found
+                      </h4>
+                      <p className="text-xs font-serif text-[#7B6D65] max-w-xs italic leading-relaxed">
+                        {searchQuery
+                          ? "No matching entries match your search query."
+                          : "This volume leaf is completely clear. Inscribe your first moment on the left page."}
+                      </p>
+                    </div>
+                  ) : (
+                    <motion.div
+                      key={currentPage}
+                      custom={pageDirection}
+                      variants={pageFlipVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      drag={!isEditing && filteredEntries.length > 1 ? "x" : false}
+                      dragConstraints={{ left: 0, right: 0 }}
+                      dragElastic={0.22}
+                      onDragEnd={(_e, { offset, velocity }) => {
+                        const swipeConfidenceThreshold = 10000;
+                        const swipePower = Math.abs(offset.x) * velocity.x;
+
+                        if (offset.x < -40 || swipePower < -swipeConfidenceThreshold) {
+                          goToNextPage();
+                        } else if (offset.x > 40 || swipePower > swipeConfidenceThreshold) {
+                          goToPrevPage();
+                        }
+                      }}
+                      className="h-full flex flex-col justify-between w-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
+                    >
+                      {/* Fixed Top Meta Row */}
+                      <div className="flex flex-wrap justify-between items-center gap-2 border-b border-stone-300/50 pb-2.5 shrink-0">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-900/80 uppercase tracking-wider font-semibold">
+                            <Calendar size={11} className="text-amber-700" />
+                            <span>
+                              {new Date(currentActiveEntry.createdAt).toLocaleDateString(undefined, {
+                                weekday: "short",
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] font-serif text-[#7B6D65] italic">
+                            <User size={11} className="text-stone-400" />
+                            <span>By {currentActiveEntry.author.name}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 text-[10px] font-sans text-diary-charcoal/50 uppercase font-bold tracking-widest">
-                          <User size={12} className="text-diary-charcoal/30" /> <span>By {currentActiveEntry.author.name}</span>
+
+                        {/* Edit / Erase / Time Capsule Pill + Slide Hint */}
+                        <div className="flex items-center gap-1.5 font-sans">
+                          {!isEditing && filteredEntries.length > 1 && (
+                            <span className="hidden sm:inline-flex text-[10px] font-mono text-[#7B6D65]/70 italic select-none mr-1">
+                              ↔ slide leaf
+                            </span>
+                          )}
+                          {currentActiveEntry.authorId === currentUserId &&
+                            !currentActiveEntry.isLocked &&
+                            !isEditing && (
+                              <>
+                                <button
+                                  onClick={startEditingMode}
+                                  className="text-[10px] text-[#7B6D65] hover:text-amber-800 flex items-center gap-1 uppercase font-bold tracking-wider transition border border-stone-300 bg-white/70 px-2.5 py-1 rounded-lg cursor-pointer"
+                                >
+                                  <Edit3 size={11} />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  onClick={() => setIsConfirmingDelete(!isConfirmingDelete)}
+                                  className={`text-[10px] flex items-center gap-1 uppercase font-bold tracking-wider transition border px-2.5 py-1 rounded-lg cursor-pointer ${
+                                    isConfirmingDelete
+                                      ? "bg-rose-50 border-rose-300 text-rose-700"
+                                      : "text-[#7B6D65] border-stone-300 hover:border-rose-300 hover:text-rose-700 bg-white/70"
+                                  }`}
+                                >
+                                  <Trash2 size={11} />
+                                  <span>Erase</span>
+                                </button>
+                              </>
+                            )}
+
+                          {currentActiveEntry.isCapsule && (
+                            <span className="bg-amber-100 text-amber-900 text-[10px] uppercase font-bold tracking-widest px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-amber-300">
+                              <Lock size={10} />
+                              <span>Capsule</span>
+                            </span>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 self-end sm:self-start font-sans">
-                        {/* Verify authorship matches before displaying edit tools */}
-                        {currentActiveEntry.authorId === currentUserId && !currentActiveEntry.isLocked && !isEditing && (
+                      {/* Scrollable Entry Body / Editing Workspace */}
+                      <div className="flex-1 overflow-y-auto py-3 pr-1 sm:pr-2 space-y-4 custom-scrollbar">
+                        {/* Delete Confirmation Drawer */}
+                        <AnimatePresence>
+                          {isConfirmingDelete && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-2.5 font-sans overflow-hidden"
+                            >
+                              <p className="font-bold text-rose-800 text-xs">
+                                Tear this page out permanently?
+                              </p>
+                              <p className="text-rose-600 text-[11px] leading-relaxed">
+                                This inscribed moment will be permanently erased from this volume.
+                              </p>
+                              <div className="flex gap-2 justify-end text-[10px] font-bold uppercase tracking-wider">
+                                <button
+                                  onClick={() => setIsConfirmingDelete(false)}
+                                  className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-md text-stone-700 transition cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleDeleteEntry}
+                                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md transition cursor-pointer flex items-center gap-1"
+                                >
+                                  <Trash2 size={10} /> Burn Page
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        {/* Edit Mode Panel */}
+                        {isEditing ? (
+                          <div className="space-y-3 bg-white/60 p-3.5 border border-stone-300 rounded-xl font-sans">
+                            {editError && (
+                              <p className="text-[11px] font-medium text-rose-700">{editError}</p>
+                            )}
+                            <div>
+                              <input
+                                type="text"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="Update title..."
+                                className="w-full bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-sm font-serif text-[#3D342F] focus:outline-hidden focus:border-amber-600"
+                              />
+                            </div>
+                            <div>
+                              <textarea
+                                rows={5}
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                placeholder="Re-ink thoughts..."
+                                className="w-full bg-white border border-stone-300 rounded-xl p-3 text-xs sm:text-sm font-serif text-[#3D342F] focus:outline-hidden resize-none leading-relaxed"
+                              />
+                            </div>
+                            <div>
+                              <input
+                                type="url"
+                                value={editImageUrl}
+                                onChange={(e) => setEditImageUrl(e.target.value)}
+                                placeholder="Photo link..."
+                                className="w-full bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-xs font-sans text-[#3D342F] focus:outline-hidden focus:border-amber-600"
+                              />
+                            </div>
+                            <div className="flex justify-end gap-2 text-xs uppercase tracking-wider font-bold">
+                              <button
+                                onClick={() => {
+                                  setIsEditing(false);
+                                  setIsConfirmingDelete(false);
+                                }}
+                                className="px-3 py-1 border border-stone-300 rounded-xl text-stone-600 transition cursor-pointer flex items-center gap-1"
+                              >
+                                <X size={12} /> Cancel
+                              </button>
+                              <button
+                                onClick={handleSaveChangesEdit}
+                                className="px-3 py-1 bg-gradient-to-r from-amber-600 to-rose-600 text-white rounded-xl transition cursor-pointer flex items-center gap-1"
+                              >
+                                <Check size={12} /> Save
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
                           <>
-                            <button onClick={startEditingMode} className="text-[10px] text-diary-charcoal/50 hover:text-diary-sage flex items-center gap-1 uppercase font-bold tracking-wider transition border border-diary-charcoal/10 bg-[#FDF7F2] px-2.5 py-1 rounded-lg cursor-pointer shadow-3xs">
-                              <Edit3 size={11} /> Edit
-                            </button>
-                            <button onClick={() => setIsConfirmingDelete(!isConfirmingDelete)} className={`text-[10px] flex items-center gap-1 uppercase font-bold tracking-wider transition border px-2.5 py-1 rounded-lg cursor-pointer shadow-3xs ${isConfirmingDelete ? "bg-rose-50 border-rose-200 text-rose-600" : "text-diary-charcoal/50 border-diary-charcoal/10 hover:border-rose-300 hover:text-rose-600 bg-[#FDF7F2]"}`}>
-                              <Trash2 size={11} /> Erase
-                            </button>
+                            {/* Entry Title */}
+                            <h3 className="font-serif text-xl sm:text-2xl text-[#3D342F] font-semibold tracking-wide leading-tight break-words">
+                              {currentActiveEntry.title}
+                            </h3>
+
+                            {/* Attached Image Snapshot */}
+                            {currentActiveEntry.imageUrl && !currentActiveEntry.isLocked && (
+                              <div className="my-3 p-2.5 bg-white border border-stone-200 rounded-md shadow-md max-w-xs sm:max-w-sm mx-auto select-none">
+                                <div className="w-full h-36 sm:h-44 rounded-md overflow-hidden bg-stone-100 border border-stone-200 relative">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={currentActiveEntry.imageUrl}
+                                    alt={currentActiveEntry.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <p className="text-[10px] font-sans text-stone-400 text-center italic mt-2 flex items-center justify-center gap-1">
+                                  <LucideImage size={10} /> Photographic Snapshot
+                                </p>
+                              </div>
+                            )}
+
+                            {/* Entry Content Body */}
+                            <div className="text-sm sm:text-base text-[#3D342F] font-serif leading-relaxed w-full min-w-0">
+                              {currentActiveEntry.isLocked ? (
+                                <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start space-x-3">
+                                  <ShieldAlert size={17} className="text-amber-700 shrink-0 mt-0.5" />
+                                  <div className="font-sans">
+                                    <h5 className="text-xs font-bold uppercase text-amber-900 tracking-wider mb-1">
+                                      Locked Time Capsule
+                                    </h5>
+                                    <p className="text-xs italic text-[#7B6D65] leading-relaxed break-words">
+                                      {currentActiveEntry.content}
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="whitespace-pre-wrap break-words pt-1 notebook-lines opacity-90">
+                                  {currentActiveEntry.content}
+                                </p>
+                              )}
+                            </div>
                           </>
                         )}
-                        {currentActiveEntry.isCapsule && (
-                          <span className="bg-diary-blush/10 text-diary-charcoal text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1.5 border border-diary-blush/20 shadow-3xs"> 
-                            <Lock size={10} className="text-diary-blush" /> Time Capsule 
-                          </span>
-                        )}
                       </div>
-                    </div>
 
-                    <div className="flex-1 py-2 w-full min-w-0 space-y-4">
-                      
-                      <AnimatePresence>
-                        {isConfirmingDelete && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-rose-50/70 border border-rose-100 rounded-xl p-3.5 space-y-3 font-sans overflow-hidden">
-                            <div className="text-xs">
-                              <p className="font-bold text-rose-800">Tear this page out permanently?</p>
-                              <p className="text-rose-600/90 mt-0.5 leading-normal text-[11px]">This action cannot be undone. This inscribed memory will be entirely wiped from the sanctuary history maps.</p>
-                            </div>
-                            <div className="flex gap-2 justify-end text-[10px] font-bold uppercase tracking-wider">
-                              <button onClick={() => setIsConfirmingDelete(false)} className="px-2.5 py-1 bg-stone-200 hover:bg-stone-300 rounded-md text-stone-700 transition cursor-pointer">Cancel</button>
-                              <button onClick={handleDeleteEntry} className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-md transition cursor-pointer flex items-center gap-1"><Trash2 size={10} /> Burn Page</button>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                      {/* Right Page Leaf Footer Note */}
+                      <div className="pt-2.5 border-t border-stone-300/40 text-right text-[10px] font-mono text-[#7B6D65] uppercase tracking-wider shrink-0">
+                        Right Leaf {currentPage + 1} of {totalBookPages}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-                      {isEditing ? (
-                        <div className="space-y-4 bg-diary-cream/30 p-4 border border-diary-charcoal/10 rounded-xl shadow-2xs font-sans">
-                          {editError && <p className="text-[11px] font-medium text-red-700">{editError}</p>}
-                          <div>
-                            <input 
-                              type="text" value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
-                              placeholder="Update header title..."
-                              title="Entry Title"
-                              className="w-full bg-white border border-diary-charcoal/10 rounded-xl px-4 py-2 text-base font-serif text-diary-charcoal focus:outline-none focus:border-diary-sage transition"
-                            />
-                          </div>
-                          <div>
-                            <textarea 
-                              rows={6} value={editContent} onChange={(e) => setEditContent(e.target.value)}
-                              placeholder="Re-ink your thoughts..."
-                              title="Entry Content"
-                              className="w-full bg-white border border-diary-charcoal/10 rounded-xl p-4 text-sm font-serif text-diary-charcoal/80 focus:outline-none resize-none leading-relaxed transition shadow-inner"
-                            />
-                          </div>
-                          <div>
-                            <input 
-                              type="url" value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)}
-                              placeholder="Update photographic memory url link..."
-                              title="Entry Image URL"
-                              className="w-full bg-white border border-diary-charcoal/10 rounded-xl px-4 py-2 text-xs font-sans text-diary-charcoal focus:outline-none focus:border-diary-sage transition"
-                            />
-                          </div>
-                          <div className="flex justify-end gap-2 text-xs uppercase tracking-wider font-bold">
-                            <button onClick={() => { setIsEditing(false); setIsConfirmingDelete(false); }} className="px-3 py-1.5 border border-diary-charcoal/10 hover:bg-diary-cream rounded-xl text-diary-charcoal/50 transition cursor-pointer flex items-center gap-1"><X size={12} /> Cancel</button>
-                            <button onClick={handleSaveChangesEdit} className="px-3 py-1.5 bg-diary-charcoal hover:bg-diary-sage text-white rounded-xl transition cursor-pointer flex items-center gap-1"><Check size={12} /> Save Changes</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <h3 className="font-serif text-xl sm:text-2xl text-diary-charcoal mb-4 font-semibold tracking-wide leading-tight wrap-break-words">{currentActiveEntry.title}</h3>
-                          
-                          {currentActiveEntry.imageUrl && !currentActiveEntry.isLocked && (
-                            <div className="my-5 p-3 bg-white border border-diary-charcoal/5 rounded-md shadow-md max-w-xs sm:max-w-sm mx-auto rotate-1 hover:rotate-0 transition duration-300 transform select-none">
-                              <div className="w-full h-40 sm:h-48 rounded-md overflow-hidden bg-diary-cream border border-diary-charcoal/5 relative">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={currentActiveEntry.imageUrl} alt={currentActiveEntry.title} className="w-full h-full object-cover" />
-                              </div>
-                              <p className="text-[10px] font-sans font-medium text-diary-charcoal/30 text-center italic mt-2.5 flex items-center justify-center gap-1"><LucideImage size={10} /> Snapshot</p>
-                            </div>
-                          )}
-
-                          <div className="text-sm text-diary-charcoal/80 font-serif w-full min-w-0">
-                            {currentActiveEntry.isLocked ? (
-                              <div className="bg-diary-cream/40 border border-diary-blush/20 p-5 rounded-2xl flex items-start space-x-3 shadow-3xs">
-                                <ShieldAlert size={18} className="text-diary-blush shrink-0 mt-0.5" />
-                                <div className="font-sans">
-                                  <h5 className="text-xs font-bold uppercase text-diary-charcoal tracking-wider mb-1">Locked Time Capsule</h5>
-                                  <p className="text-xs italic text-diary-charcoal/50 leading-relaxed wrap-break-words">{currentActiveEntry.content}</p>
-                                </div>
-                              </div>
-                            ) : (
-                              <p className="whitespace-pre-wrap wrap-break-words pt-1 notebook-lines opacity-90">
-                                {currentActiveEntry.content}
-                              </p>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="text-right text-[10px] font-sans uppercase font-bold tracking-widest text-diary-charcoal/30 border-t border-diary-charcoal/5 pt-3 mt-4"> Right Page Leaf {currentPage + 1} of {totalBookPages} </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
-
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FOOTER NAVIGATION & JUMP PANEL CONTROLS */}
-      <footer className="max-w-6xl w-full mx-auto flex flex-col md:flex-row justify-between items-center gap-4 mt-2 border-t border-diary-charcoal/5 pt-4 font-sans">
-        
-        <form onSubmit={handlePageJumpSubmit} className="flex items-center gap-2 text-xs font-medium text-diary-charcoal/50 order-2 md:order-1">
-          <span>Go to page:</span>
-          <input 
-            type="text" placeholder="No." value={jumpPageStr} onChange={(e) => setJumpPageStr(e.target.value)}
-            className="w-10 bg-[#FDF7F2] border border-diary-charcoal/10 rounded-lg text-center py-1 text-diary-charcoal font-bold focus:outline-none focus:border-diary-sage shadow-3xs"
-          />
-          <button type="submit" className="px-2.5 py-1 border border-diary-charcoal/10 hover:border-diary-sage bg-[#FDF7F2] text-diary-charcoal/70 rounded-lg uppercase tracking-wider font-bold text-[10px] transition cursor-pointer shadow-3xs">Jump</button>
-        </form>
+      </main>
 
-        <div className="flex justify-center items-center gap-3 sm:gap-6 order-1 md:order-2 w-full md:w-auto text-xs font-bold uppercase tracking-wider">
-          <button
-            disabled={currentPage === 0 || filteredEntries.length === 0 || isEditing}
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-            className="flex items-center gap-1 px-3 py-2 border border-diary-charcoal/10 rounded-xl bg-[#FDF7F2] hover:border-diary-sage text-diary-charcoal/70 disabled:opacity-40 disabled:hover:border-diary-charcoal/10 transition shadow-2xs cursor-pointer select-none"
+      {/* 🧭 BOTTOM PAGINATION & PAGE FLIP CONTROLS */}
+      <footer className="relative z-10 w-full max-w-6xl mx-auto px-3 sm:px-6 py-3 font-sans border-t border-amber-500/20 backdrop-blur-md bg-black/40">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+          
+          {/* Quick Page Jump */}
+          <form
+            onSubmit={handlePageJumpSubmit}
+            className="flex items-center gap-2 text-stone-300 font-medium order-2 sm:order-1"
           >
-            <ChevronLeft size={14} /> <span className="hidden sm:inline">Flip Back</span>
-          </button>
+            <span className="text-[11px]">Go to leaf:</span>
+            <input
+              type="text"
+              placeholder="No."
+              value={jumpPageStr}
+              onChange={(e) => setJumpPageStr(e.target.value)}
+              className="w-11 bg-black/50 border border-amber-500/30 rounded-lg text-center py-1 text-white text-xs font-bold focus:outline-hidden focus:border-amber-400"
+            />
+            <button
+              type="submit"
+              className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg uppercase tracking-wider font-semibold text-[10px] transition cursor-pointer"
+            >
+              Jump
+            </button>
+          </form>
 
-          <span className="font-sans font-semibold normal-case text-diary-charcoal/40 bg-diary-paper/40 px-3 py-1.5 rounded-md border border-diary-charcoal/5 whitespace-nowrap select-none text-[11px]">
-            {filteredEntries.length === 0 ? "Empty Ledger" : `Leaf Sheet ${currentPage + 1} / ${totalBookPages}`}
-          </span>
+          {/* Previous / Next Page Flip Controls */}
+          <div className="flex items-center gap-2 sm:gap-4 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
+            <button
+              disabled={currentPage === 0 || filteredEntries.length === 0 || isEditing}
+              onClick={goToPrevPage}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 disabled:opacity-30 disabled:hover:bg-white/10 transition cursor-pointer active:scale-95 text-xs font-medium"
+            >
+              <ChevronLeft size={14} className="text-amber-400" />
+              <span>Flip Back</span>
+            </button>
 
-          <button
-            disabled={currentPage >= filteredEntries.length - 1 || filteredEntries.length === 0 || isEditing}
-            onClick={() => setCurrentPage(prev => Math.min(filteredEntries.length - 1, prev + 1))}
-            className="flex items-center gap-1 px-3 py-2 border border-diary-charcoal/10 rounded-xl bg-[#FDF7F2] hover:border-diary-sage text-diary-charcoal/70 disabled:opacity-40 disabled:hover:border-diary-charcoal/10 transition shadow-2xs cursor-pointer select-none"
-          >
-            <span className="hidden sm:inline">Flip Forward</span> <ChevronRight size={14} />
-          </button>
+            <span className="text-[11px] font-mono text-amber-200/90 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20 whitespace-nowrap">
+              {filteredEntries.length === 0
+                ? "0 / 0"
+                : `Leaf ${currentPage + 1} of ${totalBookPages}`}
+            </span>
+
+            <button
+              disabled={
+                currentPage >= filteredEntries.length - 1 ||
+                filteredEntries.length === 0 ||
+                isEditing
+              }
+              onClick={goToNextPage}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 disabled:opacity-30 disabled:hover:bg-white/10 transition cursor-pointer active:scale-95 text-xs font-medium"
+            >
+              <span>Flip Forward</span>
+              <ChevronRight size={14} className="text-amber-400" />
+            </button>
+          </div>
+
         </div>
       </footer>
-    </main>
+    </div>
   );
 }
