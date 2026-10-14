@@ -95,6 +95,7 @@ export default function Dashboard() {
   const [mgmtData, setMgmtData] = useState<ManagementData | null>(null);
   const [loadingMgmtDiaryId, setLoadingMgmtDiaryId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingDiaryId, setDeletingDiaryId] = useState<string | null>(null);
   
   // Custom interactive layout toggles
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -243,6 +244,7 @@ export default function Dashboard() {
 
   const handleDeleteDiary = async (diaryId: string) => {
     setError(""); setSuccessMsg("");
+    setDeletingDiaryId(diaryId);
     try {
       const res = await fetch(`/api/diaries?diaryId=${diaryId}`, { 
         method: "DELETE",
@@ -258,7 +260,11 @@ export default function Dashboard() {
         setSelectedMgmtDiary(null);
         setMgmtData(null);
       }
-    } catch (err: any) { setError(err.message); }
+    } catch (err: any) { 
+      setError(err.message || "Failed to erase diary."); 
+    } finally {
+      setDeletingDiaryId(null);
+    }
   };
 
   const handleCreateDiary = async (e: React.FormEvent) => {
@@ -678,11 +684,21 @@ export default function Dashboard() {
                               Cancel
                             </button>
                             <button 
+                              disabled={deletingDiaryId === diary.id}
                               onClick={() => handleDeleteDiary(diary.id)} 
-                              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5"
+                              className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-xs"
                             >
-                              <Trash2 size={12} /> 
-                              <span>Erase</span>
+                              {deletingDiaryId === diary.id ? (
+                                <>
+                                  <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <span>Erasing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 size={12} /> 
+                                  <span>Erase</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         </motion.div>

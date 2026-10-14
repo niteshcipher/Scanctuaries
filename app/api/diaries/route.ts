@@ -163,3 +163,63 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Could not file connection request request." }, { status: 500 });
   }
 }
+
+// 3. DELETE DIARY VOLUME
+export async function DELETE(request: NextRequest) {
+  try {
+    const userId = await getUserIdFromSession();
+    if (!userId) return NextResponse.json({ error: "Unauthorized. Please log in first." }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    let diaryId = searchParams.get("diaryId");
+
+    if (!diaryId) {
+      try {
+        const body = await request.json();
+        diaryId = body.diaryId;
+      } catch {
+        // Body was empty or not JSON
+      }
+    }
+
+    if (!diaryId) {
+      return NextResponse.json({ error: "Diary ID is required." }, { status: 400 });
+    }
+
+    // Verify that the user is the owner/creator
+    const diary = await prisma.diary.findFirst({
+      where: { id: diaryId, creatorId: userId },
+    });
+
+    if (!diary) {
+      return NextResponse.json({ error: "Only the volume creator can permanently erase this diary." }, { status: 403 });
+    }
+
+    // Collect all entries in this diary to cascade reactions
+    const entries = await prisma.entry.findMany({
+      where: { diaryId },
+      select: { id: true },
+    });
+    const entryIds = entries.map((e) => e.id);
+
+    await prisma.$transaction([
+      prisma.reaction.deleteMany({
+        where: { entryId: { in: entryIds } },
+      }),
+      prisma.entry.deleteMany({
+        where: { diaryId },
+      }),
+      prisma.joinRequest.deleteMany({
+        where: { diaryId },
+      }),
+      prisma.diary.delete({
+        where: { id: diaryId },
+      }),
+    ]);
+
+    return NextResponse.json({ message: "Volume erased permanently." }, { status: 200 });
+  } catch (error: any) {
+    console.error("Diary volume erasure error:", error);
+    return NextResponse.json({ error: "Failed to permanently erase diary volume." }, { status: 500 });
+  }
+}
