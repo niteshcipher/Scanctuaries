@@ -275,9 +275,11 @@ export default function Dashboard() {
     <div className="relative min-h-screen text-[#FAF7F2] font-sans selection:bg-amber-400/40 overflow-x-hidden">
       {/* ❄️ Full-bleed Snowy Winter Street Background matching landing page */}
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-700 pointer-events-none scale-105 opacity-85"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none scale-105 opacity-85"
         style={{
           backgroundImage: `url('/landing-bg.jpg')`,
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
@@ -293,16 +295,24 @@ export default function Dashboard() {
               rgba(9, 7, 7, 0.90) 100%
             )
           `,
-          backdropFilter: "blur(1px)",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
-      {/* 🏮 Warm Streetlight Ambient Blooming Glows */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[5%] left-[20%] w-[550px] h-[550px] rounded-full bg-amber-500/18 blur-[130px] mix-blend-screen animate-pulse duration-1000" />
-        <div className="absolute top-[40%] right-[15%] w-[600px] h-[500px] rounded-full bg-orange-600/14 blur-[150px] mix-blend-screen" />
-        <div className="absolute bottom-[10%] left-[30%] w-[500px] h-[450px] rounded-full bg-amber-600/15 blur-[130px] mix-blend-screen" />
-      </div>
+      {/* 🏮 Warm Streetlight Ambient Blooming Glows (Hardware Accelerated via Pure Radial Gradients - zero blur lag) */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 20% 10%, rgba(245, 158, 11, 0.18) 0%, transparent 45%),
+            radial-gradient(circle at 85% 40%, rgba(234, 88, 12, 0.12) 0%, transparent 40%),
+            radial-gradient(circle at 30% 90%, rgba(217, 119, 6, 0.14) 0%, transparent 45%)
+          `,
+          willChange: "transform",
+          transform: "translateZ(0)",
+        }}
+      />
 
       {/* Subtle organic paper grain texture overlay */}
       <div 
@@ -310,6 +320,8 @@ export default function Dashboard() {
         style={{
           backgroundImage: `radial-gradient(#ffffff 0.75px, transparent 0.75px)`,
           backgroundSize: "24px 24px",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 

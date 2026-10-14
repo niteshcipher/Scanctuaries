@@ -80,13 +80,9 @@ function DiarySnowfall() {
         ctx.beginPath();
         ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, false);
         if (f.isGolden) {
-          ctx.fillStyle = `rgba(253, 224, 71, ${f.opacity * 0.8})`;
-          ctx.shadowColor = "rgba(245, 158, 11, 0.6)";
-          ctx.shadowBlur = 6;
+          ctx.fillStyle = `rgba(253, 224, 71, ${f.opacity * 0.85})`;
         } else {
-          ctx.fillStyle = `rgba(255, 255, 255, ${f.opacity * 0.6})`;
-          ctx.shadowColor = "rgba(255, 255, 255, 0.3)";
-          ctx.shadowBlur = 3;
+          ctx.fillStyle = `rgba(255, 255, 255, ${f.opacity * 0.7})`;
         }
         ctx.fill();
 
@@ -117,7 +113,7 @@ function DiarySnowfall() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-1 pointer-events-none"
-      style={{ opacity: 0.75 }}
+      style={{ opacity: 0.75, willChange: "transform", transform: "translateZ(0)" }}
     />
   );
 }
@@ -354,9 +350,11 @@ export default function DynamicBookWorkspace({
     <div className="relative min-h-screen text-[#FAF7F2] font-sans selection:bg-amber-400/40 overflow-x-hidden flex flex-col justify-between">
       {/* ❄️ Full-bleed Snowy Winter Street Background */}
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-700 pointer-events-none scale-105 opacity-85"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none scale-105 opacity-85"
         style={{
           backgroundImage: `url('/landing-bg.jpg')`,
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
@@ -372,15 +370,23 @@ export default function DynamicBookWorkspace({
               rgba(9, 7, 7, 0.92) 100%
             )
           `,
-          backdropFilter: "blur(1px)",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
-      {/* 🏮 Ambient Streetlight Radial Glows */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[8%] left-[25%] w-[550px] h-[550px] rounded-full bg-amber-500/16 blur-[130px] mix-blend-screen animate-pulse duration-1000" />
-        <div className="absolute bottom-[15%] right-[20%] w-[580px] h-[480px] rounded-full bg-orange-600/12 blur-[150px] mix-blend-screen" />
-      </div>
+      {/* 🏮 Ambient Streetlight Radial Glows (Hardware Accelerated via Pure Radial Gradients - zero blur lag) */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 25% 10%, rgba(245, 158, 11, 0.16) 0%, transparent 45%),
+            radial-gradient(circle at 80% 85%, rgba(234, 88, 12, 0.12) 0%, transparent 45%)
+          `,
+          willChange: "transform",
+          transform: "translateZ(0)",
+        }}
+      />
 
       {/* Subtle organic paper grain texture overlay */}
       <div
@@ -388,6 +394,8 @@ export default function DynamicBookWorkspace({
         style={{
           backgroundImage: `radial-gradient(#ffffff 0.75px, transparent 0.75px)`,
           backgroundSize: "24px 24px",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 

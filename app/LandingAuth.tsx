@@ -49,16 +49,16 @@ function SnowfallEffect() {
     window.addEventListener("resize", handleResize);
 
     // Particle pool: gentle snowflakes + warm amber bokeh sparks
-    const flakeCount = 52;
+    const flakeCount = 44;
     const flakes = Array.from({ length: flakeCount }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      r: Math.random() * 2.2 + 0.8,
+      r: Math.random() * 2.0 + 0.8,
       d: Math.random() * flakeCount,
-      speedY: Math.random() * 0.6 + 0.25,
-      speedX: Math.random() * 0.3 - 0.15,
-      opacity: Math.random() * 0.55 + 0.2,
-      isGolden: Math.random() > 0.62, // Warm golden street light spark!
+      speedY: Math.random() * 0.5 + 0.2,
+      speedX: Math.random() * 0.25 - 0.12,
+      opacity: Math.random() * 0.55 + 0.25,
+      isGolden: Math.random() > 0.65, // Warm golden street light spark!
     }));
 
     const render = () => {
@@ -69,20 +69,16 @@ function SnowfallEffect() {
         ctx.beginPath();
         ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2, false);
         if (f.isGolden) {
-          ctx.fillStyle = `rgba(253, 224, 71, ${f.opacity * 0.85})`;
-          ctx.shadowColor = "rgba(245, 158, 11, 0.7)";
-          ctx.shadowBlur = 8;
+          ctx.fillStyle = `rgba(253, 224, 71, ${f.opacity * 0.9})`;
         } else {
-          ctx.fillStyle = `rgba(255, 255, 255, ${f.opacity * 0.7})`;
-          ctx.shadowColor = "rgba(255, 255, 255, 0.35)";
-          ctx.shadowBlur = 3;
+          ctx.fillStyle = `rgba(255, 255, 255, ${f.opacity * 0.75})`;
         }
         ctx.fill();
 
         // Organic falling motion with sinusoidal drift
         f.y += f.speedY;
-        f.x += Math.sin(f.d) * 0.35 + f.speedX;
-        f.d += 0.015;
+        f.x += Math.sin(f.d) * 0.3 + f.speedX;
+        f.d += 0.012;
 
         // Loop seamlessly
         if (f.y > height + 10) {
@@ -108,7 +104,7 @@ function SnowfallEffect() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-1 pointer-events-none"
-      style={{ opacity: 0.9 }}
+      style={{ opacity: 0.85, willChange: "transform", transform: "translateZ(0)" }}
     />
   );
 }
@@ -206,9 +202,11 @@ export default function LandingAuth() {
     <div className="relative min-h-screen text-[#FAF7F2] font-sans selection:bg-amber-400/40 overflow-x-hidden">
       {/* ❄️ Full-bleed Snowy Winter Street Background */}
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-700 pointer-events-none scale-105 opacity-90"
+        className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none scale-105 opacity-90"
         style={{
           backgroundImage: `url('/landing-bg.jpg')`,
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
@@ -224,19 +222,24 @@ export default function LandingAuth() {
               rgba(9, 7, 7, 0.86) 100%
             )
           `,
-          backdropFilter: "blur(0.5px)",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
-      {/* 🏮 Warm Streetlight Blooming Ambient Orbs */}
-      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Amber streetlight bloom top-center-left */}
-        <div className="absolute top-[8%] left-[22%] w-[580px] h-[580px] rounded-full bg-amber-500/18 blur-[130px] mix-blend-screen animate-pulse duration-1000" />
-        {/* Warm golden bloom lower center */}
-        <div className="absolute top-[40%] left-[50%] -translate-x-1/2 w-[680px] h-[480px] rounded-full bg-orange-600/14 blur-[150px] mix-blend-screen" />
-        {/* Soft rose-amber bloom bottom right */}
-        <div className="absolute bottom-[10%] right-[10%] w-[520px] h-[520px] rounded-full bg-amber-600/15 blur-[130px] mix-blend-screen" />
-      </div>
+      {/* 🏮 Warm Streetlight Ambient Blooming Glows (Hardware Accelerated via Pure Radial Gradients - zero blur lag) */}
+      <div 
+        className="fixed inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle at 25% 15%, rgba(245, 158, 11, 0.18) 0%, transparent 45%),
+            radial-gradient(circle at 50% 45%, rgba(234, 88, 12, 0.12) 0%, transparent 40%),
+            radial-gradient(circle at 80% 85%, rgba(217, 119, 6, 0.14) 0%, transparent 45%)
+          `,
+          willChange: "transform",
+          transform: "translateZ(0)",
+        }}
+      />
 
       {/* Subtle organic paper grain texture overlay */}
       <div 
@@ -244,6 +247,8 @@ export default function LandingAuth() {
         style={{
           backgroundImage: `radial-gradient(#ffffff 0.75px, transparent 0.75px)`,
           backgroundSize: "24px 24px",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       />
 
@@ -272,31 +277,51 @@ export default function LandingAuth() {
         <nav className="hidden lg:flex items-center gap-8 text-sm font-medium tracking-wide text-amber-100/75">
           <a
             href="#home"
-            className="text-amber-300 font-semibold border-b-2 border-amber-400 pb-0.5 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            className="text-amber-300 font-semibold border-b-2 border-amber-400 pb-0.5 transition-colors cursor-pointer"
           >
             home
           </a>
           <a
             href="#features"
-            className="hover:text-amber-200 hover:scale-105 transition-all"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="hover:text-amber-200 hover:scale-105 transition-all cursor-pointer"
           >
             journal
           </a>
           <a
             href="#preview"
-            className="hover:text-amber-200 hover:scale-105 transition-all"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("preview")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="hover:text-amber-200 hover:scale-105 transition-all cursor-pointer"
           >
             poetry
           </a>
           <a
             href="#notes"
-            className="hover:text-amber-200 hover:scale-105 transition-all"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("notes")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="hover:text-amber-200 hover:scale-105 transition-all cursor-pointer"
           >
             reflections
           </a>
           <a
             href="#about"
-            className="hover:text-amber-200 hover:scale-105 transition-all"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="hover:text-amber-200 hover:scale-105 transition-all cursor-pointer"
           >
             about
           </a>
@@ -389,12 +414,20 @@ export default function LandingAuth() {
           className="w-full lg:w-1/2 relative flex items-center justify-center min-h-[480px]"
         >
           {/* Ambient Golden Radial Glow behind the Notebook */}
-          <div className="absolute -inset-6 bg-gradient-to-br from-amber-500/25 via-orange-500/18 to-rose-500/15 rounded-3xl blur-3xl -z-10 animate-pulse duration-1000" />
+          <div 
+            className="absolute -inset-6 rounded-3xl -z-10 pointer-events-none"
+            style={{
+              background: "radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.22) 0%, rgba(234, 88, 12, 0.1) 40%, transparent 70%)",
+              willChange: "transform",
+              transform: "translateZ(0)",
+            }}
+          />
 
           {/* Main Spiral Notebook Card with Warm Parchment Aesthetic */}
           <motion.div
             animate={{ y: [0, -7, 0] }}
             transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+            style={{ willChange: "transform" }}
             className="w-full max-w-md bg-gradient-to-b from-[#FFFDF9] via-[#FAF6EE] to-[#F5ECE0] rounded-2xl p-7 shadow-[0_25px_60px_rgba(0,0,0,0.65),0_0_40px_rgba(245,158,11,0.22)] border border-amber-300/50 relative z-10 transition-all hover:shadow-[0_30px_70px_rgba(0,0,0,0.75),0_0_50px_rgba(245,158,11,0.32)]"
           >
             {/* Golden Metallic Spiral Binding Rings at Top */}

@@ -18,7 +18,8 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto; /* Enables native 120Hz/60Hz zero-lag mousewheel and touch scroll */
+  -webkit-overflow-scrolling: touch;
 }
 
 .notebook-lines {
