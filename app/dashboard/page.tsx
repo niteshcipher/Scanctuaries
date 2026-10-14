@@ -26,6 +26,7 @@ import {
   Lock,
   ChevronRight,
   FolderOpen,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -59,10 +60,18 @@ interface IncomingRequest {
   };
 }
 
+interface AccessedUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface ManagementData {
   diaryId: string;
-  requests: any[];
-  members: any[];
+  owner?: AccessedUser;
+  members: AccessedUser[];
+  sharedMembers?: AccessedUser[];
+  requests: Array<{ id: string; user: AccessedUser }>;
 }
 
 
@@ -84,6 +93,7 @@ export default function Dashboard() {
 
   const [selectedMgmtDiary, setSelectedMgmtDiary] = useState<string | null>(null);
   const [mgmtData, setMgmtData] = useState<ManagementData | null>(null);
+  const [loadingMgmtDiaryId, setLoadingMgmtDiaryId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   
   // Custom interactive layout toggles
@@ -160,18 +170,33 @@ export default function Dashboard() {
       setMgmtData(null);
       return;
     }
-    setError(""); setSuccessMsg("");
+    setError(""); 
+    setSuccessMsg("");
+    setSelectedMgmtDiary(diaryId);
+    setLoadingMgmtDiaryId(diaryId);
     try {
       const res = await fetch(`/api/diaries/manage?diaryId=${diaryId}`, { credentials: "same-origin" });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
-        setSelectedMgmtDiary(diaryId);
-        setMgmtData({ diaryId, requests: data.requests || [], members: data.members || [] });
+        setMgmtData({
+          diaryId,
+          owner: data.owner,
+          members: data.members || [],
+          sharedMembers: data.sharedMembers || [],
+          requests: data.requests || [],
+        });
+      } else {
+        throw new Error(data.error || "Could not retrieve accessed members");
       }
-    } catch (err) { console.error(err); }
+    } catch (err: any) { 
+      console.error(err); 
+      setError(err.message || "Failed to load sanctuary members.");
+    } finally {
+      setLoadingMgmtDiaryId(null);
+    }
   };
 
-  const handleManageAction = async (diaryId: string, targetUserId: string, action: "ACCEPT" | "KICK") => {
+  const handleManageAction = async (diaryId: string, targetUserId: string, action: "ACCEPT" | "REJECT" | "KICK") => {
     setError(""); setSuccessMsg("");
     try {
       const res = await fetch("/api/diaries/manage", {
@@ -190,15 +215,23 @@ export default function Dashboard() {
         if (!prev) return null;
         if (action === "ACCEPT") {
           const acceptedReq = prev.requests.find(r => r.user.id === targetUserId);
+          const newUser = acceptedReq ? acceptedReq.user : null;
           return {
             ...prev,
             requests: prev.requests.filter(r => r.user.id !== targetUserId),
-            members: acceptedReq ? [...prev.members, acceptedReq.user] : prev.members
+            members: newUser ? [...prev.members, newUser] : prev.members,
+            sharedMembers: newUser ? [...(prev.sharedMembers || []), newUser] : prev.sharedMembers,
+          };
+        } else if (action === "KICK") {
+          return {
+            ...prev,
+            members: prev.members.filter(m => m.id !== targetUserId),
+            sharedMembers: (prev.sharedMembers || []).filter(m => m.id !== targetUserId),
           };
         } else {
           return {
             ...prev,
-            members: prev.members.filter(m => m.id !== targetUserId)
+            requests: prev.requests.filter(r => r.user.id !== targetUserId),
           };
         }
       });
@@ -656,67 +689,143 @@ export default function Dashboard() {
                       )}
                     </AnimatePresence>
 
-                    {/* Management Drawer */}
+                    {/* Management Drawer: Accessed Users & Circle Access */}
                     <AnimatePresence>
-                      {selectedMgmtDiary === diary.id && mgmtData && (
+                      {selectedMgmtDiary === diary.id && (
                         <motion.div 
                           initial={{ opacity: 0, height: 0 }} 
                           animate={{ opacity: 1, height: "auto" }} 
                           exit={{ opacity: 0, height: 0 }} 
                           className="border-t border-amber-500/20 pt-4 space-y-4 font-sans text-xs relative z-10 overflow-hidden"
                         >
-                          {/* Pending Requests */}
-                          <div>
-                            <h5 className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80 mb-2 flex items-center gap-1.5">
-                              <ShieldAlert size={13} className="text-amber-400" /> 
-                              <span>Pending Circle Knocks</span>
-                            </h5>
-                            {mgmtData.requests.length === 0 ? (
-                              <p className="text-xs italic text-stone-400 pl-1">No pending requests.</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {mgmtData.requests.map((req) => (
-                                  <div key={req.id} className="flex justify-between items-center bg-black/40 p-2.5 border border-amber-500/20 rounded-xl">
-                                    <span className="font-medium text-white truncate max-w-[70%] font-serif">
-                                      {req.user.name}
-                                    </span>
-                                    <button 
-                                      title="Accept entrance request" 
-                                      onClick={() => handleManageAction(diary.id, req.user.id, "ACCEPT")} 
-                                      className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-emerald-600 text-white rounded-lg cursor-pointer hover:opacity-90 transition shadow-xs flex items-center gap-1 font-sans text-xs"
-                                    >
-                                      <Check size={12} /> Accept
-                                    </button>
-                                  </div>
-                                ))}
+                          {loadingMgmtDiaryId === diary.id ? (
+                            <div className="flex items-center justify-center py-5 text-amber-200/70 gap-2.5 text-xs font-serif italic">
+                              <span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                              <span>Reading sanctuary scrolls...</span>
+                            </div>
+                          ) : mgmtData && (
+                            <div className="space-y-4">
+                              {/* Header Meta */}
+                              <div className="flex items-center justify-between border-b border-amber-500/15 pb-2.5">
+                                <div className="flex items-center gap-2 text-amber-300 font-serif">
+                                  <Users size={14} className="text-amber-400" />
+                                  <span className="font-semibold text-xs tracking-wide">Accessed Circle Users</span>
+                                </div>
+                                <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-amber-300 font-medium">
+                                  {mgmtData.members.length} {mgmtData.members.length === 1 ? "Soul with Access" : "Souls with Access"}
+                                </span>
                               </div>
-                            )}
-                          </div>
 
-                          {/* Connected Members */}
-                          <div>
-                            <h5 className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80 mb-2 flex items-center gap-1.5">
-                              <Users size={13} className="text-amber-400" /> 
-                              <span>Connected Friends</span>
-                            </h5>
-                            {mgmtData.members.length === 0 ? (
-                              <p className="text-xs italic text-stone-400 pl-1">No friends connected yet.</p>
-                            ) : (
-                              <div className="space-y-2">
-                                {mgmtData.members.map((mem) => (
-                                  <div key={mem.id} className="flex justify-between items-center bg-black/40 p-2.5 border border-amber-500/20 rounded-xl">
-                                    <span className="font-medium text-white font-serif">{mem.name}</span>
-                                    <button 
-                                      onClick={() => handleManageAction(diary.id, mem.id, "KICK")} 
-                                      className="px-2 py-1 border border-rose-500/30 hover:bg-rose-500/20 text-rose-300 rounded-lg cursor-pointer flex items-center gap-1 text-[11px] font-medium transition"
-                                    >
-                                      <UserMinus size={12} /> Revoke
-                                    </button>
+                              {/* Owner Entry */}
+                              <div className="bg-amber-500/10 border border-amber-400/30 rounded-xl p-2.5 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div className="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300 font-serif text-xs font-bold shrink-0">
+                                    {(mgmtData.owner?.name || "Y")[0].toUpperCase()}
                                   </div>
-                                ))}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-serif text-xs font-medium text-white truncate">
+                                        {mgmtData.owner?.name || "You"}
+                                      </span>
+                                      <span className="text-[9px] font-mono uppercase bg-amber-400/25 text-amber-300 px-1.5 py-0.5 rounded font-semibold">
+                                        Owner
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] text-stone-400 block truncate font-mono">
+                                      {mgmtData.owner?.email}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="text-[10px] text-amber-300/80 font-mono italic shrink-0">
+                                  Volume Keeper
+                                </span>
                               </div>
-                            )}
-                          </div>
+
+                              {/* Invited / Connected Members */}
+                              <div className="space-y-2">
+                                <h5 className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80 flex items-center justify-between">
+                                  <span>Invited Members ({mgmtData.sharedMembers?.length || 0})</span>
+                                </h5>
+
+                                {(!mgmtData.sharedMembers || mgmtData.sharedMembers.length === 0) ? (
+                                  <p className="text-[11px] italic text-stone-400/80 pl-1 py-1">
+                                    No other users have accessed this volume yet. Share your invite code ({diary.inviteCode}) to connect.
+                                  </p>
+                                ) : (
+                                  <div className="space-y-1.5">
+                                    {mgmtData.sharedMembers.map((mem) => (
+                                      <div 
+                                        key={mem.id} 
+                                        className="flex justify-between items-center bg-black/40 p-2.5 border border-amber-500/20 rounded-xl hover:border-amber-400/40 transition"
+                                      >
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                          <div className="w-6 h-6 rounded-full bg-stone-700/60 border border-stone-500/30 flex items-center justify-center text-stone-200 font-serif text-[11px] font-bold shrink-0">
+                                            {mem.name[0].toUpperCase()}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <span className="font-medium text-white font-serif text-xs block truncate">
+                                              {mem.name}
+                                            </span>
+                                            <span className="text-[10px] text-stone-400 block truncate font-mono">
+                                              {mem.email}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <button 
+                                          onClick={() => handleManageAction(diary.id, mem.id, "KICK")} 
+                                          className="px-2.5 py-1 border border-rose-500/40 hover:bg-rose-500/20 text-rose-300 hover:text-rose-100 rounded-lg cursor-pointer flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider transition ml-2 shrink-0"
+                                          title="Revoke access"
+                                        >
+                                          <UserMinus size={11} />
+                                          <span>Revoke</span>
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Pending Requests / Knocks */}
+                              {mgmtData.requests.length > 0 && (
+                                <div className="space-y-2 pt-2 border-t border-amber-500/15">
+                                  <h5 className="text-[10px] font-bold uppercase tracking-widest text-amber-300/80 flex items-center gap-1.5">
+                                    <ShieldAlert size={12} className="text-amber-400" />
+                                    <span>Pending Knocks ({mgmtData.requests.length})</span>
+                                  </h5>
+                                  <div className="space-y-1.5">
+                                    {mgmtData.requests.map((req) => (
+                                      <div key={req.id} className="flex justify-between items-center bg-black/40 p-2.5 border border-amber-500/20 rounded-xl">
+                                        <div className="min-w-0">
+                                          <span className="font-medium text-white truncate font-serif text-xs block">
+                                            {req.user.name}
+                                          </span>
+                                          <span className="text-[10px] text-stone-400 block truncate font-mono">
+                                            {req.user.email}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                          <button 
+                                            title="Accept entrance request" 
+                                            onClick={() => handleManageAction(diary.id, req.user.id, "ACCEPT")} 
+                                            className="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-emerald-600 text-white rounded-lg cursor-pointer hover:opacity-90 transition shadow-xs flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider"
+                                          >
+                                            <Check size={11} /> Accept
+                                          </button>
+                                          <button 
+                                            title="Decline request" 
+                                            onClick={() => handleManageAction(diary.id, req.user.id, "REJECT")} 
+                                            className="px-2 py-1 bg-white/10 hover:bg-rose-500/20 text-stone-300 hover:text-rose-200 border border-white/10 rounded-lg cursor-pointer transition text-[10px] font-semibold uppercase tracking-wider"
+                                          >
+                                            <X size={11} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </motion.div>
                       )}
                     </AnimatePresence>

@@ -1,23 +1,29 @@
 // app/api/diaries/manage/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import jwt from "jsonwebtoken";
 
 export const runtime = "nodejs";
 
-async function getUserIdFromCookie(request: NextRequest) {
+async function getUserId(request: NextRequest) {
+  const session = await auth();
+  if (session?.user?.id) return session.user.id;
+
   const token = request.cookies.get("token")?.value;
   if (!token) return null;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret") as { userId: string };
     return decoded.userId;
-  } catch { return null; }
+  } catch { 
+    return null; 
+  }
 }
 
-// OWNER HUB: Fetch all incoming pending knocks or current members
+// OWNER HUB: Fetch all incoming pending knocks and all accessed members
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserId(request);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
@@ -31,14 +37,29 @@ export async function GET(request: NextRequest) {
         creatorId: userId,
       },
       include: {
-        joinRequests: { where: { status: "PENDING" }, include: { user: { select: { id: true, name: true, email: true } } } },
-        users: { select: { id: true, name: true, email: true } }
+        joinRequests: { 
+          where: { status: "PENDING" }, 
+          include: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { createdAt: "desc" }
+        },
+        users: { 
+          select: { id: true, name: true, email: true },
+          orderBy: { name: "asc" }
+        }
       }
     });
 
-    if (!diary) return NextResponse.json({ error: "Access denied." }, { status: 403 });
+    if (!diary) return NextResponse.json({ error: "Access denied. Only the owner can view accessed members." }, { status: 403 });
 
-    return NextResponse.json({ requests: diary.joinRequests, members: diary.users.filter(u => u.id !== userId) });
+    const owner = diary.users.find((u) => u.id === diary.creatorId) || 
+      (diary.creatorId ? await prisma.user.findUnique({ where: { id: diary.creatorId }, select: { id: true, name: true, email: true } }) : null);
+
+    return NextResponse.json({ 
+      owner,
+      members: diary.users, // All accessed users
+      sharedMembers: diary.users.filter((u) => u.id !== diary.creatorId), // Invited/joined users
+      requests: diary.joinRequests 
+    });
   } catch (err) {
     return NextResponse.json({ error: "Server error handling management data" }, { status: 500 });
   }
@@ -47,7 +68,7 @@ export async function GET(request: NextRequest) {
 // ACTION HANDLE: Accept / Kick Partner Access
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromCookie(request);
+    const userId = await getUserId(request);
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { diaryId, targetUserId, action } = await request.json(); // action: "ACCEPT", "REJECT", "KICK"
